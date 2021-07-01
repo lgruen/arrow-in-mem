@@ -1,22 +1,15 @@
-FROM debian:bullseye-slim as builder
+FROM alpine:3.14 as builder
 
-RUN apt update && \
-    apt install -y ca-certificates lsb-release wget clang pkg-config libgflags-dev libgoogle-glog-dev && \
-    wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
-    apt install -y ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
-    apt update && \
-    apt install -y libarrow-dev libparquet-dev
+RUN apk add g++ clang make cmake openssl-dev openssl-libs-static linux-headers
 
-WORKDIR /build
-COPY src /build
+WORKDIR /app
+COPY src /app/src
 
-# To avoid a segfault with a statically linked pthread, we use "--whole-archive":
-# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52590
-RUN clang++ --std=c++20 -Wall -O3 -static -o main main.cc -lssl -lcrypto -ldl -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lgflags -lglog
+RUN mkdir build && \
+    cd build && \
+    CXX=clang++ cmake ../src -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=FALSE -DOPENSSL_USE_STATIC_LIBS=TRUE && \
+    make -j8
 
-FROM debian:bullseye-slim
+FROM alpine:3.14
 
-# ca-certificates is required for server certificate verification.
-RUN apt update && apt install -y ca-certificates
-
-COPY --from=builder /build/main .
+COPY --from=builder /app/build/main .

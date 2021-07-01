@@ -1,3 +1,9 @@
 [submodule "cpp-httplib"]
 	path = src/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib.git
+[submodule "src/glog"]
+	path = src/glog
+	url = https://github.com/google/glog.git
+[submodule "src/abseil-cpp"]
+	path = src/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git
