@@ -1,3 +1,5 @@
+#include <arrow/io/memory.h>
+
 #include <iostream>
 #include <string_view>
 
@@ -38,9 +40,12 @@ int main(int argc, char** argv) {
   const auto blob = ReadBlob(absl::GetFlag(FLAGS_blob_path));
   if (!blob.ok()) {
     std::cerr << blob.status() << std::endl;
-  } else {
-    std::cout << "blob size: " << blob->size() << std::endl;
+    return 1;
   }
+
+  std::cout << "blob size: " << blob->size() << std::endl;
+  const auto buffer_reader = arrow::io::BufferReader(*blob);
+  // TODO(@lgruen): read Parquet table.
 
   return 0;
 }

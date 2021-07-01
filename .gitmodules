@@ -7,3 +7,6 @@
 [submodule "src/abseil-cpp"]
 	path = src/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp.git
+[submodule "src/arrow"]
+	path = src/arrow
+	url = https://github.com/apache/arrow.git
