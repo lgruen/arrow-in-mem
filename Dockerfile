@@ -48,10 +48,7 @@ RUN cd /src && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_CXX_STANDARD=20 \
-    -DBUILD_SHARED_LIBS=FALSE \
-    -DOPENSSL_USE_STATIC_LIBS=TRUE && \
+    -DCMAKE_CXX_COMPILER=clang++ && \
     make -j8
 
 FROM alpine:3.14
