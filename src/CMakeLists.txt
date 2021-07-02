@@ -16,6 +16,6 @@ target_link_libraries(main PRIVATE
     absl::status
     absl::statusor
     absl::strings
-    arrow_static
+    arrow_shared
     google-cloud-cpp::storage
     httplib::httplib)

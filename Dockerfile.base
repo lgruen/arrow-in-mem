@@ -24,6 +24,7 @@ RUN apt update && \
     libprotobuf-dev \
     libprotoc-dev \
     libssl-dev \
+    lld \
     m4 \
     make \
     pkg-config \
@@ -34,8 +35,10 @@ RUN apt update && \
     wget \
     zlib1g-dev
 
+# Use Clang and lld.
 RUN update-alternatives --set cc /usr/bin/clang && \
-    update-alternatives --set c++ /usr/bin/clang++
+    update-alternatives --set c++ /usr/bin/clang++ && \
+    ln -sf /usr/bin/ldd /usr/bin/ld
 
 WORKDIR /build
 
