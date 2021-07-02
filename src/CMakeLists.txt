@@ -2,21 +2,20 @@ cmake_minimum_required(VERSION 3.5)
 
 project(arrow_in_mem)
 
-set(CMAKE_CXX_STANDARD 20)
-set(OPENSSL_USE_STATIC_LIBS TRUE)
-
 find_package(absl REQUIRED)
 find_package(Arrow REQUIRED)
-find_package(OpenSSL REQUIRED)
+find_package(google_cloud_cpp_storage REQUIRED)
+find_package(httplib REQUIRED)
 
 add_executable(main main.cc)
 
-target_link_libraries(main -static
+target_link_libraries(main PRIVATE
     absl::base
     absl::flags
     absl::flags_parse
     absl::status
     absl::statusor
     absl::strings
-    arrow_static
-    OpenSSL::SSL)
+    arrow_shared
+    google-cloud-cpp::storage
+    httplib::httplib)
