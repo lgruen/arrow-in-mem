@@ -1,0 +1,106 @@
+# Base image with libraries that are rarely changing, but slow to compile.
+
+FROM debian:bullseye-slim
+
+RUN apt update && \
+    apt install --no-install-recommends -y \
+    apt-transport-https \
+    apt-utils \
+    automake \
+    build-essential \
+    ca-certificates \
+    ccache \
+    clang \
+    cmake \
+    curl \
+    g++ \
+    gcc \
+    git \
+    libc-ares-dev \
+    libc-ares-dev \
+    libc-ares2 \
+    libcurl4-openssl-dev \
+    libgrpc++-dev \
+    libprotobuf-dev \
+    libprotoc-dev \
+    libssl-dev \
+    m4 \
+    make \
+    pkg-config \
+    protobuf-compiler \
+    protobuf-compiler-grpc \
+    python3 \
+    tar \
+    wget \
+    zlib1g-dev
+
+RUN update-alternatives --set cc /usr/bin/clang && \
+    update-alternatives --set c++ /usr/bin/clang++
+
+WORKDIR /build
+
+RUN mkdir /build/abseil-cpp && cd /build/abseil-cpp && \
+    curl -sSL https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_SHARED_LIBS=yes && \
+    make -j8 install
+
+RUN mkdir /build/crc32c && cd /build/crc32c && \
+    curl -sSL https://github.com/google/crc32c/archive/refs/tags/1.1.1.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DBUILD_SHARED_LIBS=yes \
+    -DCRC32C_BUILD_TESTS=OFF \
+    -DCRC32C_BUILD_BENCHMARKS=OFF \
+    -DCRC32C_USE_GLOG=OFF && \
+    make -j8 install
+
+RUN mkdir /build/json && cd /build/json && \
+    curl -sSL https://github.com/nlohmann/json/archive/refs/tags/v3.9.1.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DBUILD_SHARED_LIBS=yes \
+    -DBUILD_TESTING=OFF && \
+    make -j8 install
+
+RUN mkdir /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
+    curl -sSL https://github.com/googleapis/google-cloud-cpp/archive/refs/tags/v1.29.0.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DBUILD_TESTING=OFF \
+    -DGOOGLE_CLOUD_CPP_ENABLE_EXAMPLES=OFF && \
+    make -j8 install
+
+RUN mkdir /build/cpp-httplib && cd /build/cpp-httplib && \
+    curl -sSL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.9.0.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DHTTPLIB_COMPILE=ON \
+    -DBUILD_SHARED_LIBS=ON && \
+    make -j8 install
+
+RUN mkdir /build/arrow && cd /build/arrow && \
+    curl -sSL https://github.com/apache/arrow/archive/refs/tags/apache-arrow-4.0.1.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake ../cpp \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DARROW_PARQUET=ON \
+    -DARROW_WITH_SNAPPY=ON && \
+    make -j8 install
+
+# extract-elf-so tars .so files to create small Docker images.
+RUN curl -sSL -o /build/extract-elf-so https://github.com/William-Yeh/extract-elf-so/releases/download/v0.6/extract-elf-so_static_linux-amd64 && \
+    chmod +x /build/extract-elf-so
