@@ -20,3 +20,8 @@ docker build --build-arg BASE_IMAGE=arrow-in-mem-base --tag arrow-in-mem .
 
 The resulting image uses a multi-stage build to reduce the image size, only copying the
 executable and required shared library binaries.
+
+## Running
+
+Download a JSON key for a GCP service account, then mount that in the container:
+(TODO)

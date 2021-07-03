@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string_view>
 
-#include "scan_service.pb.h"
+#include "scan_service.grpc.pb.h"
 
 namespace {
 
@@ -29,30 +29,24 @@ absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
 }
 
 class ScanServiceImpl final : public cpg::ScanService::Service {
-  Status Load(grpc::ServerContext* const context,
+    grpc::Status Load(grpc::ServerContext* const context,
               const cpg::LoadRequest* const request,
               cpg::LoadReply* constreply) override {
     auto gcs_client = google::cloud::storage::Client::CreateDefaultClient();
     if (!gcs_client) {
-      std::cerr << "Failed to create GCS client: " << gcs_client.status()
-                << std::endl;
-      return 1;
+      return grpc::Status(grpc::StatusCode::INTERNAL, absl::StrCat("Failed to create GCS client: ", gcs_client.status().message()));
     }
 
     for (const auto& blob_path : request->blob_path()) {
       const auto& split_path = SplitBlobPath(blob_path);
       if (!split_path.ok()) {
-        std::cerr << "Invalid blob path " << blob_path << ": "
-                  << split_path.status() << std::endl;
-        return grpc::Status::INVALID_ARGUMENT;
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, absl::StrCat("Invalid blob path ", blob_path, ": ", split_path.status().message()));
       }
 
       const auto reader =
-          client->ReadObject(split_path.first, split_path.second);
+          gcs_client->ReadObject(std::string(split_path->first), std::string(split_path->second));
       if (!reader) {
-        std::cerr << "Failed to read blob " << blob_path << ": "
-                  << reader.status().message();
-        return grpc::Status::INVALID_ARGUMENT;
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, absl::StrCat("Failed to read blob ", blob_path, ": ", reader.status().message()));
       }
 
       std::cout << "Headers for blob " << blob_path << ":" << std::endl;
@@ -74,9 +68,9 @@ void RunServer(const int port) {
 
   const std::string server_address = absl::StrCat("[::]:", port);
   std::cout << "Starting server on " << server_address << std::endl;
+  grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 
-  ServerBuilder builder;
   ScanServiceImpl scan_service;
   builder.RegisterService(&scan_service);
 
@@ -87,8 +81,8 @@ void RunServer(const int port) {
 
 int main(int argc, char** argv) {
   // Get the port number from the environment.
-  const std::string_view = std::getenv("PORT");
-  if (!port_env) {
+  const char* const port_env = std::getenv("PORT");
+  if (port_env == nullptr) {
     std::cerr << "PORT environment variable not set" << std::endl;
     return 1;
   }

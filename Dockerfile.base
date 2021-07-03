@@ -25,45 +25,16 @@ RUN apt update && \
     wget \
     zlib1g-dev
 
-# Use the Gold linker.
-RUN ln -sf /usr/bin/ld.gold /usr/bin/ld
-
-RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
-    curl -sSL https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz | tar -xzf - --strip=1 && \
-    mkdir build && cd build && \
-    cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=20 \
-    -DBUILD_TESTING=OFF \
-    -DBUILD_SHARED_LIBS=yes && \
-    make -j8 install && \
-    ldconfig
-
-RUN mkdir -p /build/protobuf && cd /build/protobuf && \
-    curl -sSL https://github.com/google/protobuf/archive/v3.17.3.tar.gz | tar -xzf - --strip=1 && \
-    mkdir build && cd build && \
-    cmake ../cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=20 \
-    -DBUILD_SHARED_LIBS=yes \
-    -Dprotobuf_BUILD_TESTS=OFF && \
-    make -j8 install && \
-    ldconfig
-
-RUN mkdir -p /build/grpc && cd /build/grpc && \
-    curl -sSL https://github.com/grpc/grpc/archive/refs/tags/v1.39.0-pre1.tar.gz| tar -xzf - --strip=1 && \
-    mkdir build && cd build && \
+RUN git clone --recurse-submodules -b v1.39.0-pre1 https://github.com/grpc/grpc && \
+    cd /grpc/third_party/abseil-cpp && \
+    cmake . && \
+    make -j64 install && \
+    cd /grpc && mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
     -DgRPC_INSTALL=ON \
-    -DgRPC_BUILD_TESTS=OFF \
-    -DgRPC_ABSL_PROVIDER=package \
-    -DgRPC_CARES_PROVIDER=package \
-    -DgRPC_PROTOBUF_PROVIDER=package \
-    -DgRPC_RE2_PROVIDER=package \
-    -DgRPC_SSL_PROVIDER=package \
-    -DgRPC_ZLIB_PROVIDER=package && \
+    -DgRPC_BUILD_TESTS=OFF && \
     make -j8 install && \
     ldconfig
 
