@@ -7,7 +7,7 @@ RUN mkdir -p /src/build && cd /src/build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 && \
-    make -j8
+    make -j8 || ls && cat scan_service.pb.h
 
 RUN /build/extract-elf-so --cert /src/build/main && \
     mkdir /rootfs && cd /rootfs && \

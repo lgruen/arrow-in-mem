@@ -16,15 +16,11 @@ RUN apt update && \
     libc-ares-dev \
     libc-ares2 \
     libcurl4-openssl-dev \
-    libgrpc++-dev \
-    libprotobuf-dev \
-    libprotoc-dev \
+    libre2-dev \
     libssl-dev \
     m4 \
     make \
     pkg-config \
-    protobuf-compiler \
-    protobuf-compiler-grpc \
     tar \
     wget \
     zlib1g-dev
@@ -40,6 +36,32 @@ RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_TESTING=OFF \
     -DBUILD_SHARED_LIBS=yes && \
+    make -j8 install
+
+RUN mkdir -p /build/protobuf && cd /build/protobuf && \
+    curl -sSL https://github.com/google/protobuf/archive/v3.17.3.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake ../cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DBUILD_SHARED_LIBS=yes \
+    -Dprotobuf_BUILD_TESTS=OFF && \
+    make -j8 install
+
+RUN mkdir -p /build/grpc && cd /build/grpc && \
+    curl -sSL https://github.com/grpc/grpc/archive/refs/tags/v1.39.0-pre1.tar.gz| tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DgRPC_INSTALL=ON \
+    -DgRPC_BUILD_TESTS=OFF \
+    -DgRPC_ABSL_PROVIDER=package \
+    -DgRPC_CARES_PROVIDER=package \
+    -DgRPC_PROTOBUF_PROVIDER=package \
+    -DgRPC_RE2_PROVIDER=package \
+    -DgRPC_SSL_PROVIDER=package \
+    -DgRPC_ZLIB_PROVIDER=package && \
     make -j8 install
 
 RUN mkdir -p /build/crc32c && cd /build/crc32c && \

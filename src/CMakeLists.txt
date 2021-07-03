@@ -1,19 +1,5 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
+project(arrow-in-mem LANGUAGES CXX)
 
-project(arrow_in_mem)
-
-find_package(absl REQUIRED)
-find_package(Arrow REQUIRED)
-find_package(google_cloud_cpp_storage REQUIRED)
-
-add_executable(main main.cc)
-
-target_link_libraries(main PRIVATE
-    absl::base
-    absl::flags
-    absl::flags_parse
-    absl::status
-    absl::statusor
-    absl::strings
-    arrow_shared
-    google-cloud-cpp::storage)
+add_subdirectory(server)
+add_subdirectory(proto)
