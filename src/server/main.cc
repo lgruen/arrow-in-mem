@@ -29,24 +29,30 @@ absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
 }
 
 class ScanServiceImpl final : public cpg::ScanService::Service {
-    grpc::Status Load(grpc::ServerContext* const context,
-              const cpg::LoadRequest* const request,
-              cpg::LoadReply* constreply) override {
+  grpc::Status Load(grpc::ServerContext* const context,
+                    const cpg::LoadRequest* const request,
+                    cpg::LoadReply* constreply) override {
     auto gcs_client = google::cloud::storage::Client::CreateDefaultClient();
     if (!gcs_client) {
-      return grpc::Status(grpc::StatusCode::INTERNAL, absl::StrCat("Failed to create GCS client: ", gcs_client.status().message()));
+      return grpc::Status(grpc::StatusCode::INTERNAL,
+                          absl::StrCat("Failed to create GCS client: ",
+                                       gcs_client.status().message()));
     }
 
     for (const auto& blob_path : request->blob_path()) {
       const auto& split_path = SplitBlobPath(blob_path);
       if (!split_path.ok()) {
-        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, absl::StrCat("Invalid blob path ", blob_path, ": ", split_path.status().message()));
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                            absl::StrCat("Invalid blob path ", blob_path, ": ",
+                                         split_path.status().message()));
       }
 
-      const auto reader =
-          gcs_client->ReadObject(std::string(split_path->first), std::string(split_path->second));
+      const auto reader = gcs_client->ReadObject(
+          std::string(split_path->first), std::string(split_path->second));
       if (!reader) {
-        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, absl::StrCat("Failed to read blob ", blob_path, ": ", reader.status().message()));
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                            absl::StrCat("Failed to read blob ", blob_path,
+                                         ": ", reader.status().message()));
       }
 
       std::cout << "Headers for blob " << blob_path << ":" << std::endl;

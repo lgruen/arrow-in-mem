@@ -25,6 +25,8 @@ RUN apt update && \
     wget \
     zlib1g-dev
 
+# We're using a module provider build to avoid issues with the gRPC proto plugin.
+# https://github.com/faaxm/exmpl-cmake-grpc/issues/1#issuecomment-873431482
 RUN git clone --recurse-submodules -b v1.39.0-pre1 https://github.com/grpc/grpc && \
     cd /grpc/third_party/abseil-cpp && \
     cmake . && \
