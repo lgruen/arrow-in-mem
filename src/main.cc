@@ -4,7 +4,6 @@
 #include <absl/strings/str_cat.h>
 #include <arrow/io/memory.h>
 #include <google/cloud/storage/client.h>
-#include <httplib.h>
 
 #include <iostream>
 #include <string_view>

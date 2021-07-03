@@ -3,20 +3,18 @@ FROM $BASE_IMAGE as builder
 
 COPY src /src
 
-RUN cd /src && \
-    mkdir build && \
-    cd build && \
+RUN mkdir -p /src/build && cd /src/build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 && \
     make -j8
 
 RUN /build/extract-elf-so --cert /src/build/main && \
-    mkdir /build/rootfs && cd /build/rootfs && \
-    tar xf /build/rootfs.tar
+    mkdir /rootfs && cd /rootfs && \
+    tar xf /rootfs.tar
 
 FROM scratch
 
-COPY --from=builder /build/rootfs /
+COPY --from=builder /rootfs /
 
 CMD ["/usr/local/bin/main"]

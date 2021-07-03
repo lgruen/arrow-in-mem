@@ -7,16 +7,12 @@ RUN apt update && \
     apt-transport-https \
     apt-utils \
     automake \
-    build-essential \
     ca-certificates \
     ccache \
     clang \
     cmake \
     curl \
-    g++ \
-    gcc \
     git \
-    libc-ares-dev \
     libc-ares-dev \
     libc-ares2 \
     libcurl4-openssl-dev \
@@ -24,25 +20,19 @@ RUN apt update && \
     libprotobuf-dev \
     libprotoc-dev \
     libssl-dev \
-    lld \
     m4 \
     make \
     pkg-config \
     protobuf-compiler \
     protobuf-compiler-grpc \
-    python3 \
     tar \
     wget \
     zlib1g-dev
 
-# Use Clang and lld.
-RUN update-alternatives --set cc /usr/bin/clang && \
-    update-alternatives --set c++ /usr/bin/clang++ && \
-    ln -sf /usr/bin/ldd /usr/bin/ld
+# Use the Gold linker.
+RUN ln -sf /usr/bin/ld.gold /usr/bin/ld
 
-WORKDIR /build
-
-RUN mkdir /build/abseil-cpp && cd /build/abseil-cpp && \
+RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
     curl -sSL https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake .. \
@@ -52,7 +42,7 @@ RUN mkdir /build/abseil-cpp && cd /build/abseil-cpp && \
     -DBUILD_SHARED_LIBS=yes && \
     make -j8 install
 
-RUN mkdir /build/crc32c && cd /build/crc32c && \
+RUN mkdir -p /build/crc32c && cd /build/crc32c && \
     curl -sSL https://github.com/google/crc32c/archive/refs/tags/1.1.1.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake .. \
@@ -64,7 +54,7 @@ RUN mkdir /build/crc32c && cd /build/crc32c && \
     -DCRC32C_USE_GLOG=OFF && \
     make -j8 install
 
-RUN mkdir /build/json && cd /build/json && \
+RUN mkdir -p /build/json && cd /build/json && \
     curl -sSL https://github.com/nlohmann/json/archive/refs/tags/v3.9.1.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake .. \
@@ -74,7 +64,7 @@ RUN mkdir /build/json && cd /build/json && \
     -DBUILD_TESTING=OFF && \
     make -j8 install
 
-RUN mkdir /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
+RUN mkdir -p /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     curl -sSL https://github.com/googleapis/google-cloud-cpp/archive/refs/tags/v1.29.0.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake .. \
@@ -84,17 +74,7 @@ RUN mkdir /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     -DGOOGLE_CLOUD_CPP_ENABLE_EXAMPLES=OFF && \
     make -j8 install
 
-RUN mkdir /build/cpp-httplib && cd /build/cpp-httplib && \
-    curl -sSL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.9.0.tar.gz | tar -xzf - --strip=1 && \
-    mkdir build && cd build && \
-    cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=20 \
-    -DHTTPLIB_COMPILE=ON \
-    -DBUILD_SHARED_LIBS=ON && \
-    make -j8 install
-
-RUN mkdir /build/arrow && cd /build/arrow && \
+RUN mkdir -p /build/arrow && cd /build/arrow && \
     curl -sSL https://github.com/apache/arrow/archive/refs/tags/apache-arrow-4.0.1.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake ../cpp \
