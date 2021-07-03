@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package cpg;
+
+service ScanService {
+  rpc Load(LoadRequest) returns (LoadReply) {}
+}
+
+message LoadRequest { repeated string blob_path = 1; }
+
+message LoadReply {}
