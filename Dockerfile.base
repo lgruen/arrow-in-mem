@@ -36,7 +36,8 @@ RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_TESTING=OFF \
     -DBUILD_SHARED_LIBS=yes && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/protobuf && cd /build/protobuf && \
     curl -sSL https://github.com/google/protobuf/archive/v3.17.3.tar.gz | tar -xzf - --strip=1 && \
@@ -46,7 +47,8 @@ RUN mkdir -p /build/protobuf && cd /build/protobuf && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_SHARED_LIBS=yes \
     -Dprotobuf_BUILD_TESTS=OFF && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/grpc && cd /build/grpc && \
     curl -sSL https://github.com/grpc/grpc/archive/refs/tags/v1.39.0-pre1.tar.gz| tar -xzf - --strip=1 && \
@@ -62,7 +64,8 @@ RUN mkdir -p /build/grpc && cd /build/grpc && \
     -DgRPC_RE2_PROVIDER=package \
     -DgRPC_SSL_PROVIDER=package \
     -DgRPC_ZLIB_PROVIDER=package && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/crc32c && cd /build/crc32c && \
     curl -sSL https://github.com/google/crc32c/archive/refs/tags/1.1.1.tar.gz | tar -xzf - --strip=1 && \
@@ -74,7 +77,8 @@ RUN mkdir -p /build/crc32c && cd /build/crc32c && \
     -DCRC32C_BUILD_TESTS=OFF \
     -DCRC32C_BUILD_BENCHMARKS=OFF \
     -DCRC32C_USE_GLOG=OFF && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/json && cd /build/json && \
     curl -sSL https://github.com/nlohmann/json/archive/refs/tags/v3.9.1.tar.gz | tar -xzf - --strip=1 && \
@@ -84,7 +88,8 @@ RUN mkdir -p /build/json && cd /build/json && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_SHARED_LIBS=yes \
     -DBUILD_TESTING=OFF && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     curl -sSL https://github.com/googleapis/google-cloud-cpp/archive/refs/tags/v1.29.0.tar.gz | tar -xzf - --strip=1 && \
@@ -94,7 +99,8 @@ RUN mkdir -p /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_TESTING=OFF \
     -DGOOGLE_CLOUD_CPP_ENABLE_EXAMPLES=OFF && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 RUN mkdir -p /build/arrow && cd /build/arrow && \
     curl -sSL https://github.com/apache/arrow/archive/refs/tags/apache-arrow-4.0.1.tar.gz | tar -xzf - --strip=1 && \
@@ -104,7 +110,8 @@ RUN mkdir -p /build/arrow && cd /build/arrow && \
     -DCMAKE_CXX_STANDARD=20 \
     -DARROW_PARQUET=ON \
     -DARROW_WITH_SNAPPY=ON && \
-    make -j8 install
+    make -j8 install && \
+    lconfig
 
 # extract-elf-so tars .so files to create small Docker images.
 RUN curl -sSL -o /build/extract-elf-so https://github.com/William-Yeh/extract-elf-so/releases/download/v0.6/extract-elf-so_static_linux-amd64 && \
