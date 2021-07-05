@@ -9,14 +9,14 @@ RUN mkdir -p /src/build && cd /src/build && \
     -DCMAKE_CXX_STANDARD=20 && \
     make -j8
 
-CMD ["/src/build/server/server"]
-
 RUN /build/extract-elf-so --cert /src/build/server/server && \
     mkdir /rootfs && cd /rootfs && \
     tar xf /rootfs.tar
 
-#FROM scratch
-#
-#COPY --from=builder /rootfs /
-#
-#CMD ["/usr/local/bin/server"]
+FROM debian:bullseye-slim
+
+COPY --from=builder /rootfs /
+
+RUN ldconfig
+
+CMD ["/usr/local/bin/server"]
