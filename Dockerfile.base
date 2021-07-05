@@ -9,9 +9,10 @@ RUN apt update && \
     automake \
     ca-certificates \
     ccache \
-    clang \
     cmake \
     curl \
+    g++ \
+    gcc \
     git \
     libc-ares-dev \
     libc-ares2 \
