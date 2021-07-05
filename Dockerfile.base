@@ -25,9 +25,6 @@ RUN apt update && \
     wget \
     zlib1g-dev
 
-# https://github.com/faaxm/exmpl-cmake-grpc/issues/1#issuecomment-873746729
-RUN rm /usr/share/cmake-3.18/Modules/FindProtobuf.cmake
-
 RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
     curl -sSL https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
@@ -60,6 +57,8 @@ RUN mkdir -p /build/grpc && cd /build/grpc && \
     -DgRPC_ABSL_PROVIDER=package \
     -DgRPC_CARES_PROVIDER=package \
     -DgRPC_PROTOBUF_PROVIDER=package \
+    # https://github.com/faaxm/exmpl-cmake-grpc/issues/1#issuecomment-873905356
+    -DgRPC_PROTOBUF_PACKAGE_TYPE=CONFIG \
     -DgRPC_RE2_PROVIDER=package \
     -DgRPC_SSL_PROVIDER=package \
     -DgRPC_ZLIB_PROVIDER=package && \
