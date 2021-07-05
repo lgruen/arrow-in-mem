@@ -13,12 +13,17 @@ find_package(google_cloud_cpp_storage REQUIRED)
 find_package(Arrow REQUIRED)
 
 add_executable(server ${SOURCES})
+
+target_compile_options(server PRIVATE -Wall -Werror)
+
 target_link_libraries(server PRIVATE
     absl::base
     absl::status
     absl::statusor
     absl::strings
-    arrow_shared
+    # We're linking Arrow statically due to
+    # https://issues.apache.org/jira/browse/ARROW-13256.
+    arrow_static
     google-cloud-cpp::storage
     gRPC::grpc++_reflection
     proto
