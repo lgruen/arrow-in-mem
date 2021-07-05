@@ -1,8 +1,6 @@
 # Base image with libraries that are rarely changing, but slow to compile.
 
-FROM ubuntu:20.04
-
-ENV DEBIAN_FRONTEND=noninteractive
+FROM debian:bullseye-slim
 
 RUN apt update && \
     apt install --no-install-recommends -y \
@@ -18,36 +16,29 @@ RUN apt update && \
     libc-ares-dev \
     libc-ares2 \
     libcurl4-openssl-dev \
+    libgrpc++-dev \
+    libprotobuf-dev \
+    libprotoc-dev \
     libre2-dev \
     libssl-dev \
     m4 \
     make \
     pkg-config \
+    protobuf-compiler \
+    protobuf-compiler-grpc \
     tar \
     wget \
     zlib1g-dev
 
-# We're using a module provider build to avoid issues with the gRPC proto plugin.
-# https://github.com/faaxm/exmpl-cmake-grpc/issues/1#issuecomment-873431482
-RUN git clone --recurse-submodules -b v1.39.0-pre1 https://github.com/grpc/grpc && \
-    # https://github.com/grpc/grpc/issues/25949#issuecomment-823427625
-    cd /grpc/third_party/abseil-cpp && \
-    cmake . && \
-    make -j8 install && \
-    cd /grpc && mkdir build && cd build && \
+RUN mkdir -p /build/abseil-cpp && cd /build/abseil-cpp && \
+    curl -sSL https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz | tar -xzf - --strip=1 && \
+    mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
-    -DgRPC_INSTALL=ON \
-    -DgRPC_BUILD_TESTS=OFF \
-    -DgRPC_CARES_PROVIDER=package \
-    -DgRPC_RE2_PROVIDER=package \
-    # Compiling SSL from the submodule will result in a weird BIO_write error at
-    # runtime.
-    -DgRPC_SSL_PROVIDER=package \
-    -DgRPC_ZLIB_PROVIDER=package && \
-    make -j8 install && \
-    ldconfig
+    -DBUILD_TESTING=OFF \
+    -DBUILD_SHARED_LIBS=yes && \
+    make -j8 install
 
 RUN mkdir -p /build/crc32c && cd /build/crc32c && \
     curl -sSL https://github.com/google/crc32c/archive/refs/tags/1.1.1.tar.gz | tar -xzf - --strip=1 && \
