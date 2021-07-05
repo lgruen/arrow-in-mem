@@ -10,9 +10,8 @@ RUN apt update && \
     ca-certificates \
     ccache \
     cmake \
+    clang \
     curl \
-    g++ \
-    gcc \
     git \
     libc-ares-dev \
     libc-ares2 \
@@ -93,10 +92,6 @@ RUN mkdir -p /build/json && cd /build/json && \
 
 RUN mkdir -p /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     curl -sSL https://github.com/googleapis/google-cloud-cpp/archive/refs/tags/v1.29.0.tar.gz | tar -xzf - --strip=1 && \
-    # Avoid "Error [43]=A libcurl function was given a bad argument while setting curl
-    # option [98] to 131072" when calling the GCS client library's ReadObject.
-    sed -i 's/auto constexpr kDefaultBufferSize/\/\/auto constexpr kDefaultBufferSize/g' google/cloud/storage/internal/curl_request.cc google/cloud/storage/internal/curl_download_request.cc && \
-    sed -i 's/, kDefaultBufferSize/, 128L * 1024L/g' google/cloud/storage/internal/curl_request.cc google/cloud/storage/internal/curl_download_request.cc && \
     mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
