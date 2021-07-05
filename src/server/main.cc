@@ -31,34 +31,52 @@ absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
 class ScanServiceImpl final : public cpg::ScanService::Service {
   grpc::Status Load(grpc::ServerContext* const context,
                     const cpg::LoadRequest* const request,
-                    cpg::LoadReply* constreply) override {
+                    cpg::LoadReply* const reply) override {
+    std::cout << "Load..." << std::endl;
+    std::cout << "Before client..." << std::endl;
     auto gcs_client = google::cloud::storage::Client::CreateDefaultClient();
+    std::cout << "After client..." << std::endl;
     if (!gcs_client) {
+      std::cerr << "x3" << std::endl;
       return grpc::Status(grpc::StatusCode::INTERNAL,
                           absl::StrCat("Failed to create GCS client: ",
                                        gcs_client.status().message()));
     }
+    std::cerr << "x1" << std::endl;
 
     for (const auto& blob_path : request->blob_path()) {
+      std::cerr << "x2" << std::endl;
+      std::cerr << blob_path << std::endl;
       const auto& split_path = SplitBlobPath(blob_path);
       if (!split_path.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             absl::StrCat("Invalid blob path ", blob_path, ": ",
                                          split_path.status().message()));
       }
+      std::cerr << "x3" << std::endl;
+      std::cerr << "x5" << std::string(split_path->first) << ", "
+                << std::string(split_path->second) << std::endl;
 
-      const auto reader = gcs_client->ReadObject(
-          std::string(split_path->first), std::string(split_path->second));
-      if (!reader) {
-        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                            absl::StrCat("Failed to read blob ", blob_path,
-                                         ": ", reader.status().message()));
-      }
+      try {
+        const auto reader = gcs_client->ReadObject(
+            std::string(split_path->first), std::string(split_path->second));
+        std::cerr << "x4" << std::endl;
+        if (!reader) {
+          return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                              absl::StrCat("Failed to read blob ", blob_path,
+                                           ": ", reader.status().message()));
+        }
 
-      std::cout << "Headers for blob " << blob_path << ":" << std::endl;
-      const auto& headers = reader.headers();
-      for (const auto& kv : headers) {
-        std::cout << "  " << kv.first << ", " << kv.second << std::endl;
+        std::cerr << "x5" << std::endl;
+        std::cout << "Headers for blob " << blob_path << ":" << std::endl;
+        const auto& headers = reader.headers();
+        for (const auto& kv : headers) {
+          std::cout << "  " << kv.first << ", " << kv.second << std::endl;
+        }
+      } catch (const std::exception& e) {
+        std::cerr << "oh noes: " << e.what() << std::endl;
+      } catch (...) {
+        std::cerr << "oh noooooes: " << std::endl;
       }
     }
 

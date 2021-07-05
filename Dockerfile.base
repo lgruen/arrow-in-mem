@@ -1,6 +1,8 @@
 # Base image with libraries that are rarely changing, but slow to compile.
 
-FROM debian:bullseye-slim
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
     apt install --no-install-recommends -y \
@@ -28,6 +30,7 @@ RUN apt update && \
 # We're using a module provider build to avoid issues with the gRPC proto plugin.
 # https://github.com/faaxm/exmpl-cmake-grpc/issues/1#issuecomment-873431482
 RUN git clone --recurse-submodules -b v1.39.0-pre1 https://github.com/grpc/grpc && \
+    # https://github.com/grpc/grpc/issues/25949#issuecomment-823427625
     cd /grpc/third_party/abseil-cpp && \
     cmake . && \
     make -j8 install && \
@@ -36,7 +39,13 @@ RUN git clone --recurse-submodules -b v1.39.0-pre1 https://github.com/grpc/grpc 
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
     -DgRPC_INSTALL=ON \
-    -DgRPC_BUILD_TESTS=OFF && \
+    -DgRPC_BUILD_TESTS=OFF \
+    -DgRPC_CARES_PROVIDER=package \
+    -DgRPC_RE2_PROVIDER=package \
+    # Compiling SSL from the submodule will result in a weird BIO_write error at
+    # runtime.
+    -DgRPC_SSL_PROVIDER=package \
+    -DgRPC_ZLIB_PROVIDER=package && \
     make -j8 install && \
     ldconfig
 
