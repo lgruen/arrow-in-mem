@@ -21,24 +21,24 @@ docker build --build-arg BASE_IMAGE=arrow-in-mem-base --tag arrow-in-mem .
 The resulting image uses a multi-stage build to reduce the image size, only copying the
 executable and required shared library binaries.
 
-## Run
-
-Download a JSON key for a GCP service account, then mount that in the container:
-
 ```bash
-docker run -it --init -e PORT=80 -e GOOGLE_APPLICATION_CREDENTIALS=/gsa-key/key.json -v $HOME/Downloads/key.json:/gsa-key/key.json -p 8080:80 arrow-in-mem
+gcloud config set project leo-dev-290304
+
+IMAGE=australia-southeast1-docker.pkg.dev/leo-dev-290304/ar-sydney/arrow-in-mem:latest
+docker tag arrow-in-mem $IMAGE
+docker push $IMAGE
+
+gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --service-account=arrow-in-mem@leo-dev-290304.iam.gserviceaccount.com --image=$IMAGE arrow-in-mem
 ```
 
-## Requests
+## Client
 
-Use the `grpc_cli` tool to send RPC requests to the server. For example, to list the `ScanService` methods, run:
-
-```bash
-grpc_cli ls localhost:8080 cpg.ScanService
-```
-
-Loading and scanning data:
+Run this from a VM that uses a service account that has invoker permissions for the Cloud Run deployment:
 
 ```bash
-grpc_cli call localhost:8080 cpg.ScanService.Load "blob_path: ['gs://leo-tmp-au/gnomad_popmax_af.parquet/part-00000-357cb06c-5e3f-4d73-80fa-3f65a6f41836-c000.snappy.parquet', 'gs://leo-tmp-au/gnomad_popmax_af.parquet/part-00001-357cb06c-5e3f-4d73-80fa-3f65a6f41836-c000.snappy.parquet']"
+export CLOUD_RUN_URL=$(gcloud run services describe arrow-in-mem --platform managed --region australia-southeast1 --format 'value(status.url)')
+
+cd src/client
+python3 client.py gs://some/path gs://another/path
 ```
+
