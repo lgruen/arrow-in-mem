@@ -101,7 +101,7 @@ RUN mkdir -p /build/google-cloud-cpp && cd /build/google-cloud-cpp && \
     ldconfig
 
 RUN mkdir -p /build/arrow && cd /build/arrow && \
-    curl -sSL https://github.com/apache/arrow/archive/refs/tags/apache-arrow-4.0.1.tar.gz | tar -xzf - --strip=1 && \
+    curl -sSL https://github.com/apache/arrow/archive/refs/tags/apache-arrow-5.0.0.tar.gz | tar -xzf - --strip=1 && \
     mkdir build && cd build && \
     cmake ../cpp \
     -DCMAKE_BUILD_TYPE=Release \
