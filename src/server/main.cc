@@ -1,6 +1,9 @@
+#include <absl/base/thread_annotations.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/strip.h>
+#include <absl/synchronization/blocking_counter.h>
+#include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
 #include <arrow/io/memory.h>
 #include <google/cloud/storage/client.h>
@@ -8,13 +11,83 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
+#include <cassert>
+#include <cstddef>
+#include <functional>
 #include <iostream>
 #include <optional>
+#include <queue>
 #include <string_view>
+#include <thread>  // NOLINT(build/c++11)
+#include <vector>
 
 #include "scan_service.grpc.pb.h"
 
 namespace {
+
+// Adapted from the Abseil thread pool.
+class ThreadPool {
+ public:
+  explicit ThreadPool(const int num_threads) {
+    for (int i = 0; i < num_threads; ++i) {
+      threads_.push_back(std::thread(&ThreadPool::WorkLoop, this));
+    }
+  }
+
+  ThreadPool(const ThreadPool&) = delete;
+  ThreadPool& operator=(const ThreadPool&) = delete;
+
+  ~ThreadPool() {
+    {
+      absl::MutexLock l(&mu_);
+      for (size_t i = 0; i < threads_.size(); i++) {
+        queue_.push(nullptr);  // Shutdown signal.
+      }
+    }
+    for (auto& t : threads_) {
+      t.join();
+    }
+  }
+
+  // Schedule a function to be run on a ThreadPool thread immediately.
+  void Schedule(std::function<void()> func) {
+    assert(func != nullptr);
+    absl::MutexLock l(&mu_);
+    queue_.push(std::move(func));
+  }
+
+ private:
+  bool WorkAvailable() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
+    return !queue_.empty();
+  }
+
+  void WorkLoop() {
+    while (true) {
+      std::function<void()> func;
+      {
+        absl::MutexLock l(&mu_);
+        mu_.Await(absl::Condition(this, &ThreadPool::WorkAvailable));
+        func = std::move(queue_.front());
+        queue_.pop();
+      }
+      if (func == nullptr) {  // Shutdown signal.
+        break;
+      }
+      func();
+    }
+  }
+
+  absl::Mutex mu_;
+  std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mu_);
+  std::vector<std::thread> threads_;
+};
+
+// Thread-pool singleton.
+ThreadPool* GetThreadPool() {
+  static constexpr int kNumThreads = 50;
+  static ThreadPool* const thread_pool = new ThreadPool(kNumThreads);
+  return thread_pool;
+}
 
 // Returns the bucket and file name from a complete gs:// path.
 absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
@@ -91,17 +164,35 @@ class ScanServiceImpl final : public cpg::ScanService::Service {
                                        gcs_client.status().message()));
     }
 
-    for (const auto& blob_path : request->blob_paths()) {
-      const auto blob = ReadBlob(&*gcs_client, blob_path);
-      if (!blob.ok()) {
-        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                            absl::StrCat("Failed to read blob ", blob_path,
-                                         ": ", blob.status().message()));
-      }
+    ThreadPool* const thread_pool = GetThreadPool();
+    const size_t num_blobs = request->blob_paths_size();
+    std::vector<absl::StatusOr<size_t>> results(num_blobs);
+    absl::BlockingCounter blocking_counter(num_blobs);
+    for (size_t i = 0; i < num_blobs; ++i) {
+      thread_pool->Schedule([&shared_gcs_client = *gcs_client,
+                             &blob_path = request->blob_paths(i),
+                             &result = results[i], &blocking_counter] {
+        // Make a copy of the shared GCS client for thread-safety.
+        google::cloud::storage::Client gcs_client = shared_gcs_client;
+        const auto blob = ReadBlob(&gcs_client, blob_path);
+        if (blob.ok()) {
+          result = blob->size();
+        } else {
+          result = absl::InvalidArgumentError(
+              absl::StrCat("Failed to read blob ", blob_path, ": ",
+                           blob.status().message()));
+        }
+        blocking_counter.DecrementCount();
+      });
+    }
 
-      // TODO(@lgruen): read into Parquet table.
-      // const auto buffer_reader = arrow::io::BufferReader(*blob);
-      response->add_blob_sizes(blob->size());
+    blocking_counter.Wait();
+    for (const auto& result : results) {
+      if (!result.ok()) {
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                            std::string(result.status().message()));
+      }
+      response->add_blob_sizes(*result);
     }
 
     return grpc::Status::OK;

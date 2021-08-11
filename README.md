@@ -37,7 +37,7 @@ Either set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or run the 
 
 ```bash
 cd src/client
-./client.py --cloud_run_url=$(gcloud run services describe arrow-in-mem --platform managed --region australia-southeast1 --format 'value(status.url)') --blob_paths=gs://some/path,gs://another/path
+./client.py --cloud_run_url=$(gcloud run services describe arrow-in-mem --platform managed --region australia-southeast1 --format 'value(status.url)') --blob_paths_file=blob_paths.txt
 ```
 
 For gRPC debugging, the following environment variables are helpful:

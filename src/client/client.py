@@ -38,12 +38,11 @@ def _get_id_token_credentials(auth_request, audience):
     help='Cloud Run deployment URL, like https://arrow-in-mem-3bbubtd33q-ts.a.run.app',
 )
 @click.option(
-    '--blob_path',
+    '--blob_paths_file',
     required=True,
-    multiple=True,
-    help='A blob path to fetch, e.g. "gs://some/blob"; can be specified multiple times',
+    help='A file with one line per blob to fetch, with entries like "gs://some/blob"',
 )
-def main(cloud_run_url, blob_path):
+def main(cloud_run_url, blob_paths_file):
     cloud_run_domain = _remove_prefix(cloud_run_url, 'https://')
 
     auth_request = google.auth.transport.requests.Request()
@@ -56,11 +55,12 @@ def main(cloud_run_url, blob_path):
     stub = scan_service_pb2_grpc.ScanServiceStub(channel)
 
     request = scan_service_pb2.LoadRequest()
-    request.blob_paths.extend(blob_path)
+    with open(blob_paths_file) as f:
+        blob_paths = [line.strip() for line in f]
+    request.blob_paths.extend(blob_paths)
 
     response = stub.Load(request)
-    print(len(response.blob_sizes))
-    for blob_path, blob_size in zip(blob_path, response.blob_sizes):
+    for blob_path, blob_size in zip(blob_paths, response.blob_sizes):
         print(f'{blob_path}: {blob_size}')
 
 
