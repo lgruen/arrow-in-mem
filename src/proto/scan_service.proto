@@ -3,9 +3,9 @@ syntax = "proto3";
 package cpg;
 
 service ScanService {
-  rpc Load(LoadRequest) returns (LoadReply) {}
+  rpc Load(LoadRequest) returns (LoadResponse) {}
 }
 
-message LoadRequest { repeated string blob_path = 1; }
+message LoadRequest { repeated string blob_paths = 1; }
 
-message LoadReply {}
+message LoadResponse { repeated int64 blob_sizes = 1; }

@@ -83,7 +83,7 @@ absl::StatusOr<std::string> ReadBlob(
 class ScanServiceImpl final : public cpg::ScanService::Service {
   grpc::Status Load(grpc::ServerContext* const context,
                     const cpg::LoadRequest* const request,
-                    cpg::LoadReply* const reply) override {
+                    cpg::LoadResponse* const response) override {
     auto gcs_client = google::cloud::storage::Client::CreateDefaultClient();
     if (!gcs_client.ok()) {
       return grpc::Status(grpc::StatusCode::INTERNAL,
@@ -91,7 +91,7 @@ class ScanServiceImpl final : public cpg::ScanService::Service {
                                        gcs_client.status().message()));
     }
 
-    for (const auto& blob_path : request->blob_path()) {
+    for (const auto& blob_path : request->blob_paths()) {
       const auto blob = ReadBlob(&*gcs_client, blob_path);
       if (!blob.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
@@ -101,6 +101,7 @@ class ScanServiceImpl final : public cpg::ScanService::Service {
 
       // TODO(@lgruen): read into Parquet table.
       // const auto buffer_reader = arrow::io::BufferReader(*blob);
+      response->add_blob_sizes(blob->size());
     }
 
     return grpc::Status::OK;

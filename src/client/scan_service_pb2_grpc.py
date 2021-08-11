@@ -17,7 +17,7 @@ class ScanServiceStub(object):
         self.Load = channel.unary_unary(
                 '/cpg.ScanService/Load',
                 request_serializer=scan__service__pb2.LoadRequest.SerializeToString,
-                response_deserializer=scan__service__pb2.LoadReply.FromString,
+                response_deserializer=scan__service__pb2.LoadResponse.FromString,
                 )
 
 
@@ -36,7 +36,7 @@ def add_ScanServiceServicer_to_server(servicer, server):
             'Load': grpc.unary_unary_rpc_method_handler(
                     servicer.Load,
                     request_deserializer=scan__service__pb2.LoadRequest.FromString,
-                    response_serializer=scan__service__pb2.LoadReply.SerializeToString,
+                    response_serializer=scan__service__pb2.LoadResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -61,6 +61,6 @@ class ScanService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/cpg.ScanService/Load',
             scan__service__pb2.LoadRequest.SerializeToString,
-            scan__service__pb2.LoadReply.FromString,
+            scan__service__pb2.LoadResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

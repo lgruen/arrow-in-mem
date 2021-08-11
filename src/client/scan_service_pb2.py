@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x12scan_service.proto\x12\x03\x63pg\" \n\x0bLoadRequest\x12\x11\n\tblob_path\x18\x01 \x03(\t\"\x0b\n\tLoadReply29\n\x0bScanService\x12*\n\x04Load\x12\x10.cpg.LoadRequest\x1a\x0e.cpg.LoadReply\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x12scan_service.proto\x12\x03\x63pg\"!\n\x0bLoadRequest\x12\x12\n\nblob_paths\x18\x01 \x03(\t\"\"\n\x0cLoadResponse\x12\x12\n\nblob_sizes\x18\x01 \x03(\x03\x32<\n\x0bScanService\x12-\n\x04Load\x12\x10.cpg.LoadRequest\x1a\x11.cpg.LoadResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -34,7 +34,7 @@ _LOADREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='blob_path', full_name='cpg.LoadRequest.blob_path', index=0,
+      name='blob_paths', full_name='cpg.LoadRequest.blob_paths', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -53,18 +53,25 @@ _LOADREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=27,
-  serialized_end=59,
+  serialized_end=60,
 )
 
 
-_LOADREPLY = _descriptor.Descriptor(
-  name='LoadReply',
-  full_name='cpg.LoadReply',
+_LOADRESPONSE = _descriptor.Descriptor(
+  name='LoadResponse',
+  full_name='cpg.LoadResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='blob_sizes', full_name='cpg.LoadResponse.blob_sizes', index=0,
+      number=1, type=3, cpp_type=2, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -77,12 +84,12 @@ _LOADREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=61,
-  serialized_end=72,
+  serialized_start=62,
+  serialized_end=96,
 )
 
 DESCRIPTOR.message_types_by_name['LoadRequest'] = _LOADREQUEST
-DESCRIPTOR.message_types_by_name['LoadReply'] = _LOADREPLY
+DESCRIPTOR.message_types_by_name['LoadResponse'] = _LOADRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 LoadRequest = _reflection.GeneratedProtocolMessageType('LoadRequest', (_message.Message,), {
@@ -92,12 +99,12 @@ LoadRequest = _reflection.GeneratedProtocolMessageType('LoadRequest', (_message.
   })
 _sym_db.RegisterMessage(LoadRequest)
 
-LoadReply = _reflection.GeneratedProtocolMessageType('LoadReply', (_message.Message,), {
-  'DESCRIPTOR' : _LOADREPLY,
+LoadResponse = _reflection.GeneratedProtocolMessageType('LoadResponse', (_message.Message,), {
+  'DESCRIPTOR' : _LOADRESPONSE,
   '__module__' : 'scan_service_pb2'
-  # @@protoc_insertion_point(class_scope:cpg.LoadReply)
+  # @@protoc_insertion_point(class_scope:cpg.LoadResponse)
   })
-_sym_db.RegisterMessage(LoadReply)
+_sym_db.RegisterMessage(LoadResponse)
 
 
 
@@ -108,8 +115,8 @@ _SCANSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=74,
-  serialized_end=131,
+  serialized_start=98,
+  serialized_end=158,
   methods=[
   _descriptor.MethodDescriptor(
     name='Load',
@@ -117,7 +124,7 @@ _SCANSERVICE = _descriptor.ServiceDescriptor(
     index=0,
     containing_service=None,
     input_type=_LOADREQUEST,
-    output_type=_LOADREPLY,
+    output_type=_LOADRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

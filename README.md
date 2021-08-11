@@ -33,12 +33,16 @@ gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --con
 
 ## Client
 
-Run this from a VM that uses a service account that has invoker permissions for the Cloud Run deployment:
+Either set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or run the client from a Compute Engine VM. The associated service account needs to invoker permissions for the Cloud Run deployment.
 
 ```bash
-export CLOUD_RUN_URL=$(gcloud run services describe arrow-in-mem --platform managed --region australia-southeast1 --format 'value(status.url)')
-
 cd src/client
-python3 client.py gs://some/path gs://another/path
+./client.py --cloud_run_url=$(gcloud run services describe arrow-in-mem --platform managed --region australia-southeast1 --format 'value(status.url)') --blob_paths=gs://some/path,gs://another/path
 ```
 
+For gRPC debugging, the following environment variables are helpful:
+
+```bash
+export GRPC_VERBOSITY=DEBUG
+export GRPC_TRACE=secure_endpoint
+```
