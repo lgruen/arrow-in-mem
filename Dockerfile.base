@@ -16,6 +16,7 @@ RUN apt update && \
     libc-ares-dev \
     libc-ares2 \
     libcurl4-openssl-dev \
+    libgoogle-perftools-dev \
     libre2-dev \
     libssl-dev \
     m4 \
