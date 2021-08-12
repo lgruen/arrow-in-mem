@@ -60,8 +60,8 @@ def main(cloud_run_url, data_urls_file):
     request.data_urls.extend(data_urls)
 
     response = stub.Query(request)
-    for data_url, data_size in zip(data_urls, response.data_sizes):
-        print(f'{data_url}: {data_size}')
+    for data_url, num_rows in zip(data_urls, response.num_rows):
+        print(f'{data_url}: {num_rows} rows')
 
 
 if __name__ == '__main__':

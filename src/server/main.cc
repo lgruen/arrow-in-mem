@@ -6,6 +6,8 @@
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
 #include <arrow/io/memory.h>
+#include <arrow/ipc/options.h>
+#include <arrow/ipc/reader.h>
 #include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -170,6 +172,37 @@ class GcsReader : public UrlReader {
           kNumThreadPoolWorkers)};
 };
 
+absl::StatusOr<size_t> GetNumRows(const UrlReader& url_reader,
+                                  const std::string_view url) {
+  const auto data = url_reader.Read(url);
+  if (!data.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to read ", url, ": ", data.status().message()));
+  }
+
+  arrow::ipc::IpcReadOptions ipc_read_options;
+  // We parallelize over URLs already, no need for nested parallelism.
+  ipc_read_options.use_threads = false;
+  // TODO(@lgruen): set included_fields based on fields present in the query.
+
+  arrow::io::BufferReader buffer_reader{*data};
+  auto record_batch_file_reader =
+      arrow::ipc::RecordBatchFileReader::Open(&buffer_reader, ipc_read_options);
+  if (!record_batch_file_reader.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to read record batch for ", url, ": ",
+                     record_batch_file_reader.status().ToString()));
+  }
+
+  const auto num_rows = (*record_batch_file_reader)->CountRows();
+  if (!num_rows.ok()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Failed to count rows for ", url, ": ", num_rows.status().ToString()));
+  }
+
+  return *num_rows;
+}
+
 class QueryServiceImpl final : public seqr::QueryService::Service {
  public:
   QueryServiceImpl(const UrlReader& url_reader) : url_reader_(url_reader) {}
@@ -185,13 +218,7 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
       thread_pool_.Schedule([&url_reader = url_reader_,
                              &url = request->data_urls(i), &result = results[i],
                              &blocking_counter] {
-        const auto data = url_reader.Read(url);
-        if (data.ok()) {
-          result = data->size();
-        } else {
-          result = absl::InvalidArgumentError(absl::StrCat(
-              "Failed to read URL ", url, ": ", data.status().message()));
-        }
+        result = GetNumRows(url_reader, url);
         blocking_counter.DecrementCount();
       });
     }
@@ -202,7 +229,7 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      response->add_data_sizes(*result);
+      response->add_num_rows(*result);
     }
 
     return grpc::Status::OK;

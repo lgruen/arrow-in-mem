@@ -11,4 +11,4 @@ message QueryRequest {
   optional int64 max_results = 2;
 }
 
-message QueryResponse { repeated int64 data_sizes = 1; }
+message QueryResponse { repeated int64 num_rows = 1; }

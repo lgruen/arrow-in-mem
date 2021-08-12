@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"K\n\x0cQueryRequest\x12\x11\n\tdata_urls\x18\x01 \x03(\t\x12\x18\n\x0bmax_results\x18\x02 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_max_results\"#\n\rQueryResponse\x12\x12\n\ndata_sizes\x18\x01 \x03(\x03\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"K\n\x0cQueryRequest\x12\x11\n\tdata_urls\x18\x01 \x03(\t\x12\x18\n\x0bmax_results\x18\x02 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_max_results\"!\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x03(\x03\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -78,7 +78,7 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='data_sizes', full_name='seqr.QueryResponse.data_sizes', index=0,
+      name='num_rows', full_name='seqr.QueryResponse.num_rows', index=0,
       number=1, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -97,7 +97,7 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=111,
-  serialized_end=146,
+  serialized_end=144,
 )
 
 _QUERYREQUEST.oneofs_by_name['_max_results'].fields.append(
@@ -130,8 +130,8 @@ _QUERYSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=148,
-  serialized_end=214,
+  serialized_start=146,
+  serialized_end=212,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',
