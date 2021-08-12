@@ -84,7 +84,7 @@ class ThreadPool {
 
 // Thread-pool singleton.
 ThreadPool* GetThreadPool() {
-  static constexpr int kNumThreads = 50;
+  static constexpr int kNumThreads = 32;
   static ThreadPool* const thread_pool = new ThreadPool(kNumThreads);
   return thread_pool;
 }
