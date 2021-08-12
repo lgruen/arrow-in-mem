@@ -3,7 +3,7 @@ find_package(gRPC CONFIG REQUIRED)
 find_package(Threads)
 
 set(PROTO_FILES
-    scan_service.proto
+    seqr_query_service.proto
 )
 
 add_library(proto ${PROTO_FILES})

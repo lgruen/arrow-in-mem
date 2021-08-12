@@ -21,9 +21,11 @@
 #include <thread>  // NOLINT(build/c++11)
 #include <vector>
 
-#include "scan_service.grpc.pb.h"
+#include "seqr_query_service.grpc.pb.h"
 
 namespace {
+
+constexpr size_t kNumThreadPoolWorkers = 32;
 
 // Adapted from the Abseil thread pool.
 class ThreadPool {
@@ -82,12 +84,12 @@ class ThreadPool {
   std::vector<std::thread> threads_;
 };
 
-// Thread-pool singleton.
-ThreadPool* GetThreadPool() {
-  static constexpr int kNumThreads = 32;
-  static ThreadPool* const thread_pool = new ThreadPool(kNumThreads);
-  return thread_pool;
-}
+class UrlReader {
+ public:
+  virtual ~UrlReader() = default;
+
+  virtual absl::StatusOr<std::string> Read(absl::string_view url) const = 0;
+};
 
 // Returns the bucket and file name from a complete gs:// path.
 absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
@@ -103,84 +105,92 @@ absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
                         blob_path.substr(slash_pos + 1));
 }
 
-absl::StatusOr<std::string> ReadBlob(
-    google::cloud::storage::Client* const gcs_client,
-    const std::string_view blob_path) {
-  const auto& split_path = SplitBlobPath(blob_path);
-  if (!split_path.ok()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Invalid path", split_path.status().message()));
-  }
+namespace gcs = google::cloud::storage;
 
-  try {
-    const absl::Time start_time = absl::Now();
-    auto reader = gcs_client->ReadObject(std::string(split_path->first),
-                                         std::string(split_path->second));
-    if (reader.bad()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Failed to read blob: ", reader.status().message()));
+class GcsReader : public UrlReader {
+ public:
+  absl::StatusOr<std::string> Read(const absl::string_view url) const override {
+    if (!url.starts_with("gs://")) {
+      return absl::InvalidArgumentError(absl::StrCat("Unsupported URL: ", url));
     }
 
-    std::optional<int> content_length;
-    for (const auto& header : reader.headers()) {
-      if (header.first == "content-length") {
-        int value = 0;
-        if (!absl::SimpleAtoi(header.second, &value)) {
-          return absl::NotFoundError(
-              "Couldn't parse content-length header value");
-        }
-        content_length = value;
+    // Make a copy of the GCS client for thread-safety.
+    gcs::Client gcs_client = shared_gcs_client_;
+    const auto& split_path = SplitBlobPath(url);
+    if (!split_path.ok()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Invalid path", split_path.status().message()));
+    }
+
+    try {
+      const absl::Time start_time = absl::Now();
+      auto reader = gcs_client.ReadObject(std::string(split_path->first),
+                                          std::string(split_path->second));
+      if (reader.bad()) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Failed to read blob: ", reader.status().message()));
       }
-    }
-    if (!content_length) {
-      return absl::NotFoundError("Couldn't find content-length header");
-    }
 
-    std::string result(*content_length, 0);
-    reader.read(result.data(), *content_length);
-    if (reader.bad()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Failed to read blob: ", reader.status().message()));
+      std::optional<int> content_length;
+      for (const auto& header : reader.headers()) {
+        if (header.first == "content-length") {
+          int value = 0;
+          if (!absl::SimpleAtoi(header.second, &value)) {
+            return absl::NotFoundError(
+                "Couldn't parse content-length header value");
+          }
+          content_length = value;
+        }
+      }
+      if (!content_length) {
+        return absl::NotFoundError("Couldn't find content-length header");
+      }
+
+      std::string result(*content_length, 0);
+      reader.read(result.data(), *content_length);
+      if (reader.bad()) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Failed to read blob: ", reader.status().message()));
+      }
+      const absl::Time end_time = absl::Now();
+      std::cout << "Read " << url << " (" << *content_length << "B) in "
+                << (end_time - start_time) << std::endl;
+      return result;
+    } catch (const std::exception& e) {
+      // Unfortunately the googe-cloud-storage library throws exceptions.
+      return absl::InternalError(
+          absl::StrCat("Exception during reading of ", url, ": ", e.what()));
     }
-    const absl::Time end_time = absl::Now();
-    std::cout << "Read " << blob_path << " (" << *content_length << "B) in "
-              << (end_time - start_time) << std::endl;
-    return result;
-  } catch (const std::exception& e) {
-    // Unfortunately the googe-cloud-storage library throws exceptions.
-    return absl::InternalError(absl::StrCat("Exception during reading of ",
-                                            blob_path, ": ", e.what()));
   }
-}
 
-class ScanServiceImpl final : public cpg::ScanService::Service {
-  grpc::Status Load(grpc::ServerContext* const context,
-                    const cpg::LoadRequest* const request,
-                    cpg::LoadResponse* const response) override {
-    auto gcs_client = google::cloud::storage::Client::CreateDefaultClient();
-    if (!gcs_client.ok()) {
-      return grpc::Status(grpc::StatusCode::INTERNAL,
-                          absl::StrCat("Failed to create GCS client: ",
-                                       gcs_client.status().message()));
-    }
+ private:
+  // Share connection pool, but need to make copies for thread-safety.
+  gcs::Client shared_gcs_client_{
+      google::cloud::Options{}.set<gcs::ConnectionPoolSizeOption>(
+          kNumThreadPoolWorkers)};
+};
 
-    ThreadPool* const thread_pool = GetThreadPool();
-    const size_t num_blobs = request->blob_paths_size();
-    std::vector<absl::StatusOr<size_t>> results(num_blobs);
-    absl::BlockingCounter blocking_counter(num_blobs);
-    for (size_t i = 0; i < num_blobs; ++i) {
-      thread_pool->Schedule([&shared_gcs_client = *gcs_client,
-                             &blob_path = request->blob_paths(i),
-                             &result = results[i], &blocking_counter] {
-        // Make a copy of the shared GCS client for thread-safety.
-        google::cloud::storage::Client gcs_client = shared_gcs_client;
-        const auto blob = ReadBlob(&gcs_client, blob_path);
-        if (blob.ok()) {
-          result = blob->size();
+class QueryServiceImpl final : public seqr::QueryService::Service {
+ public:
+  QueryServiceImpl(const UrlReader& url_reader) : url_reader_(url_reader) {}
+
+ private:
+  grpc::Status Query(grpc::ServerContext* const context,
+                     const seqr::QueryRequest* const request,
+                     seqr::QueryResponse* const response) override {
+    const size_t num_urls = request->data_urls_size();
+    std::vector<absl::StatusOr<size_t>> results(num_urls);
+    absl::BlockingCounter blocking_counter(num_urls);
+    for (size_t i = 0; i < num_urls; ++i) {
+      thread_pool_.Schedule([&url_reader = url_reader_,
+                             &url = request->data_urls(i), &result = results[i],
+                             &blocking_counter] {
+        const auto data = url_reader.Read(url);
+        if (data.ok()) {
+          result = data->size();
         } else {
-          result = absl::InvalidArgumentError(
-              absl::StrCat("Failed to read blob ", blob_path, ": ",
-                           blob.status().message()));
+          result = absl::InvalidArgumentError(absl::StrCat(
+              "Failed to read URL ", url, ": ", data.status().message()));
         }
         blocking_counter.DecrementCount();
       });
@@ -192,11 +202,14 @@ class ScanServiceImpl final : public cpg::ScanService::Service {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      response->add_blob_sizes(*result);
+      response->add_data_sizes(*result);
     }
 
     return grpc::Status::OK;
   }
+
+  ThreadPool thread_pool_{kNumThreadPoolWorkers};
+  const UrlReader& url_reader_;
 };
 
 void RunServer(const int port) {
@@ -208,8 +221,9 @@ void RunServer(const int port) {
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 
-  ScanServiceImpl scan_service;
-  builder.RegisterService(&scan_service);
+  GcsReader gcs_reader;
+  QueryServiceImpl query_service(gcs_reader);
+  builder.RegisterService(&query_service);
 
   builder.BuildAndStart()->Wait();
 }

@@ -2,10 +2,10 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import scan_service_pb2 as scan__service__pb2
+import seqr_query_service_pb2 as seqr__query__service__pb2
 
 
-class ScanServiceStub(object):
+class QueryServiceStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -14,42 +14,42 @@ class ScanServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Load = channel.unary_unary(
-                '/cpg.ScanService/Load',
-                request_serializer=scan__service__pb2.LoadRequest.SerializeToString,
-                response_deserializer=scan__service__pb2.LoadResponse.FromString,
+        self.Query = channel.unary_unary(
+                '/seqr.QueryService/Query',
+                request_serializer=seqr__query__service__pb2.QueryRequest.SerializeToString,
+                response_deserializer=seqr__query__service__pb2.QueryResponse.FromString,
                 )
 
 
-class ScanServiceServicer(object):
+class QueryServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Load(self, request, context):
+    def Query(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ScanServiceServicer_to_server(servicer, server):
+def add_QueryServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Load': grpc.unary_unary_rpc_method_handler(
-                    servicer.Load,
-                    request_deserializer=scan__service__pb2.LoadRequest.FromString,
-                    response_serializer=scan__service__pb2.LoadResponse.SerializeToString,
+            'Query': grpc.unary_unary_rpc_method_handler(
+                    servicer.Query,
+                    request_deserializer=seqr__query__service__pb2.QueryRequest.FromString,
+                    response_serializer=seqr__query__service__pb2.QueryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'cpg.ScanService', rpc_method_handlers)
+            'seqr.QueryService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class ScanService(object):
+class QueryService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Load(request,
+    def Query(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class ScanService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/cpg.ScanService/Load',
-            scan__service__pb2.LoadRequest.SerializeToString,
-            scan__service__pb2.LoadResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/seqr.QueryService/Query',
+            seqr__query__service__pb2.QueryRequest.SerializeToString,
+            seqr__query__service__pb2.QueryResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package seqr;
+
+service QueryService {
+  rpc Query(QueryRequest) returns (QueryResponse) {}
+}
+
+message QueryRequest {
+  repeated string data_urls = 1;
+  optional int64 max_results = 2;
+}
+
+message QueryResponse { repeated int64 data_sizes = 1; }

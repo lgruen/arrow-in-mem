@@ -4,8 +4,8 @@ import click
 import os
 import google.auth.transport.requests
 import google.auth.transport.grpc
-import scan_service_pb2
-import scan_service_pb2_grpc
+import seqr_query_service_pb2
+import seqr_query_service_pb2_grpc
 
 
 def _remove_prefix(s: str, prefix: str) -> str:
@@ -35,14 +35,14 @@ def _get_id_token_credentials(auth_request, audience):
 @click.option(
     '--cloud_run_url',
     required=True,
-    help='Cloud Run deployment URL, like https://arrow-in-mem-3bbubtd33q-ts.a.run.app',
+    help='Cloud Run deployment URL, like https://seqr-query-backend-3bbubtd33q-ts.a.run.app',
 )
 @click.option(
-    '--blob_paths_file',
+    '--data_urls_file',
     required=True,
-    help='A file with one line per blob to fetch, with entries like "gs://some/blob"',
+    help='A file with one line per URL to fetch, with entries like "gs://some/blob"',
 )
-def main(cloud_run_url, blob_paths_file):
+def main(cloud_run_url, data_urls_file):
     cloud_run_domain = _remove_prefix(cloud_run_url, 'https://')
 
     auth_request = google.auth.transport.requests.Request()
@@ -52,16 +52,16 @@ def main(cloud_run_url, blob_paths_file):
         credentials, auth_request, f'{cloud_run_domain}:443'
     )
 
-    stub = scan_service_pb2_grpc.ScanServiceStub(channel)
+    stub = seqr_query_service_pb2_grpc.QueryServiceStub(channel)
 
-    request = scan_service_pb2.LoadRequest()
-    with open(blob_paths_file) as f:
-        blob_paths = [line.strip() for line in f]
-    request.blob_paths.extend(blob_paths)
+    request = seqr_query_service_pb2.QueryRequest()
+    with open(data_urls_file) as f:
+        data_urls = [line.strip() for line in f]
+    request.data_urls.extend(data_urls)
 
-    response = stub.Load(request)
-    for blob_path, blob_size in zip(blob_paths, response.blob_sizes):
-        print(f'{blob_path}: {blob_size}')
+    response = stub.Query(request)
+    for data_url, data_size in zip(data_urls, response.data_sizes):
+        print(f'{data_url}: {data_size}')
 
 
 if __name__ == '__main__':
