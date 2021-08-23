@@ -38,11 +38,11 @@ def _get_id_token_credentials(auth_request, audience):
     help='Cloud Run deployment URL, like https://seqr-query-backend-3bbubtd33q-ts.a.run.app',
 )
 @click.option(
-    '--data_urls_file',
+    '--arrow_urls_file',
     required=True,
     help='A file with one line per URL to fetch, with entries like "gs://some/blob"',
 )
-def main(cloud_run_url, data_urls_file):
+def main(cloud_run_url, arrow_urls_file):
     cloud_run_domain = _remove_prefix(cloud_run_url, 'https://')
 
     auth_request = google.auth.transport.requests.Request()
@@ -55,13 +55,13 @@ def main(cloud_run_url, data_urls_file):
     stub = seqr_query_service_pb2_grpc.QueryServiceStub(channel)
 
     request = seqr_query_service_pb2.QueryRequest()
-    with open(data_urls_file) as f:
-        data_urls = [line.strip() for line in f]
-    request.data_urls.extend(data_urls)
+    with open(arrow_urls_file) as f:
+        arrow_urls = [line.strip() for line in f]
+    request.arrow_urls.extend(arrow_urls)
 
     response = stub.Query(request)
-    for data_url, num_rows in zip(data_urls, response.num_rows):
-        print(f'{data_url}: {num_rows} rows')
+    for arrow_url, num_rows in zip(arrow_urls, response.num_rows):
+        print(f'{arrow_url}: {num_rows} rows')
 
 
 if __name__ == '__main__':

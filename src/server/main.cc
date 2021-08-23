@@ -172,8 +172,8 @@ class GcsReader : public UrlReader {
           kNumThreadPoolWorkers)};
 };
 
-absl::StatusOr<size_t> GetNumRows(const UrlReader& url_reader,
-                                  const std::string_view url) {
+absl::StatusOr<size_t> ProcessUrl(const UrlReader& url_reader,
+                                      const std::string_view url) {
   const auto data = url_reader.Read(url);
   if (!data.ok()) {
     return absl::InvalidArgumentError(
@@ -190,8 +190,24 @@ absl::StatusOr<size_t> GetNumRows(const UrlReader& url_reader,
       arrow::ipc::RecordBatchFileReader::Open(&buffer_reader, ipc_read_options);
   if (!record_batch_file_reader.ok()) {
     return absl::InvalidArgumentError(
-        absl::StrCat("Failed to read record batch for ", url, ": ",
+        absl::StrCat("Failed to open record batch reader for ", url, ": ",
                      record_batch_file_reader.status().ToString()));
+  }
+
+  const auto schema = (*record_batch_file_reader)->schema();
+  while (true) {
+    auto record_batch = (*record_batch_file_reader)->Next();
+    if (!record_batch.ok()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Failed to read record batch for ", url, ": ",
+                       record_batch_file_reader.status().ToString()));
+    }
+
+    if (record_batch == nullptr) {
+      break;  // All done.
+    }
+
+    ProcessRecordBatch(*record_batch);
   }
 
   const auto num_rows = (*record_batch_file_reader)->CountRows();
@@ -211,13 +227,13 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   grpc::Status Query(grpc::ServerContext* const context,
                      const seqr::QueryRequest* const request,
                      seqr::QueryResponse* const response) override {
-    const size_t num_urls = request->data_urls_size();
-    std::vector<absl::StatusOr<size_t>> results(num_urls);
-    absl::BlockingCounter blocking_counter(num_urls);
-    for (size_t i = 0; i < num_urls; ++i) {
+    const size_t num_arrow_urls = request->arrow_urls_size();
+    std::vector<absl::StatusOr<size_t>> results(num_arrow_urls);
+    absl::BlockingCounter blocking_counter(num_arrow_urls);
+    for (size_t i = 0; i < num_arrow_urls; ++i) {
       thread_pool_.Schedule([&url_reader = url_reader_,
-                             &url = request->data_urls(i), &result = results[i],
-                             &blocking_counter] {
+                             &url = request->arrow_urls(i),
+                             &result = results[i], &blocking_counter] {
         result = GetNumRows(url_reader, url);
         blocking_counter.DecrementCount();
       });

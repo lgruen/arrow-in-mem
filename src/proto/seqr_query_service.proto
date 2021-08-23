@@ -7,7 +7,7 @@ service QueryService {
 }
 
 message QueryRequest {
-  repeated string data_urls = 1;
+  repeated string arrow_urls = 1;
   optional int64 max_results = 2;
 }
 
