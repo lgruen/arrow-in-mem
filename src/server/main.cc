@@ -211,12 +211,12 @@ absl::StatusOr<size_t> ProcessArrowUrl(
           absl::StrCat("Failed to read record batch ", i, " for ", url, ": ",
                        record_batch.status().ToString()));
     }
-    record_batch_vector.push_back(*record_batch);
+    record_batch_vector.push_back(std::move(*record_batch));
   }
 
-  arrow::dataset::InMemoryDataset in_memory_dataset{schema,
-                                                    record_batch_vector};
-  auto scanner_builder = in_memory_dataset.NewScan();
+  auto in_memory_dataset = std::make_shared<arrow::dataset::InMemoryDataset>(
+      schema, std::move(record_batch_vector));
+  auto scanner_builder = in_memory_dataset->NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to create scanner builder for ", url, ": ",
