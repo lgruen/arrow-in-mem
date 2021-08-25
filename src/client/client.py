@@ -2,8 +2,6 @@
 
 import click
 import os
-import google.auth.transport.requests
-import google.auth.transport.grpc
 import seqr_query_service_pb2
 import seqr_query_service_pb2_grpc
 
@@ -34,8 +32,7 @@ def _get_id_token_credentials(auth_request, audience):
 @click.command()
 @click.option(
     '--cloud_run_url',
-    required=True,
-    help='Cloud Run deployment URL, like https://seqr-query-backend-3bbubtd33q-ts.a.run.app',
+    help='Cloud Run deployment URL, like https://seqr-query-backend-3bbubtd33q-ts.a.run.app. If not given, will attempt to connect to localhost:8080, which is useful for debugging.',
 )
 @click.option(
     '--arrow_urls_file',
@@ -43,14 +40,20 @@ def _get_id_token_credentials(auth_request, audience):
     help='A file with one line per URL to fetch, with entries like "gs://some/blob"',
 )
 def main(cloud_run_url, arrow_urls_file):
-    cloud_run_domain = _remove_prefix(cloud_run_url, 'https://')
+    if cloud_run_url:
+        cloud_run_domain = _remove_prefix(cloud_run_url, 'https://')
 
-    auth_request = google.auth.transport.requests.Request()
-    credentials = _get_id_token_credentials(auth_request, cloud_run_url)
+        import google.auth.transport.requests
+        auth_request = google.auth.transport.requests.Request()
+        credentials = _get_id_token_credentials(auth_request, cloud_run_url)
 
-    channel = google.auth.transport.grpc.secure_authorized_channel(
-        credentials, auth_request, f'{cloud_run_domain}:443'
-    )
+        import google.auth.transport.grpc
+        channel = google.auth.transport.grpc.secure_authorized_channel(
+            credentials, auth_request, f'{cloud_run_domain}:443'
+        )
+    else:
+        import grpc
+        channel = grpc.insecure_channel('localhost:8080')
 
     stub = seqr_query_service_pb2_grpc.QueryServiceStub(channel)
 
