@@ -7,6 +7,7 @@
 #include <absl/time/time.h>
 #include <arrow/compute/exec.h>
 #include <arrow/dataset/dataset.h>
+#include <arrow/dataset/scanner.h>
 #include <arrow/io/memory.h>
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
@@ -207,7 +208,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   }
 
   arrow::dataset::InMemoryDataset in_memory_dataset{schema,
-                                                    *record_batch_generator};
+                                                    record_batch_generator};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
