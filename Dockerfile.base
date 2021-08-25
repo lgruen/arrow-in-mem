@@ -109,7 +109,7 @@ RUN mkdir -p /build/arrow && cd /build/arrow && \
     cmake ../cpp \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     # https://issues.apache.org/jira/browse/ARROW-13256.
-    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD=11 \
     -DARROW_BUILD_STATIC=ON \
     -DARROW_COMPUTE=ON \
     -DARROW_DATASET=ON \
