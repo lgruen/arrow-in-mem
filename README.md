@@ -72,5 +72,5 @@ docker build --build-arg CMAKE_BUILD_TYPE=Debug --tag seqr-query-backend-base-de
 
 docker build --build-arg BASE_IMAGE=seqr-query-backend-base-debug --tag seqr-query-backend-debug -f Dockerfile.debug .
 
-docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
+docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
