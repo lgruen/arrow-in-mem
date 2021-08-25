@@ -207,9 +207,11 @@ absl::StatusOr<size_t> ProcessArrowUrl(
                      record_batch_generator.status().ToString()));
   }
 
+  auto shared_record_batch_generator =
+      std::make_shared<arrow::dataset::RecordBatchGenerator>(
+          std::move(*record_batch_generator));
   arrow::dataset::InMemoryDataset in_memory_dataset{
-      schema, std::make_shared<arrow::dataset::RecordBatchGenerator>(
-                  std::move(*record_batch_generator))};
+      schema, std::move(shared_record_batch_generator)};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
@@ -246,8 +248,8 @@ absl::StatusOr<size_t> ProcessArrowUrl(
             return arrow::Status::OK();
           });
       !status.ok()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Failed to run scanner on ", url, ": ", scan.ToString()));
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Failed to run scanner on ", url, ": ", status.ToString()));
   }
 
   return num_rows;
