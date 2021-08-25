@@ -106,7 +106,8 @@ RUN mkdir -p /build/arrow && cd /build/arrow && \
     mkdir build && cd build && \
     cmake ../cpp \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=20 \
+    # https://issues.apache.org/jira/browse/ARROW-13256.
+    -DCMAKE_CXX_STANDARD=17 \
     -DARROW_BUILD_STATIC=ON \
     -DARROW_COMPUTE=ON \
     -DARROW_DATASET=ON \
