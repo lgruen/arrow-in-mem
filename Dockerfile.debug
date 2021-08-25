@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
-RUN apt install -y gdb
+RUN apt install -y lldb
 
 COPY src /src
 
@@ -11,4 +11,4 @@ RUN mkdir -p /src/build && cd /src/build && \
     -DCMAKE_CXX_STANDARD=20 && \
     make -j8
 
-CMD ["gdb", "/src/build/server/server"]
+CMD ["lldb", "/src/build/server/server"]
