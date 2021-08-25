@@ -200,7 +200,8 @@ absl::StatusOr<size_t> ProcessArrowUrl(
 
   const auto schema = (*record_batch_file_reader)->schema();
 
-  const int num_record_batches = (*record_batch_file_reader)->num_record_batches());
+  const int num_record_batches =
+      (*record_batch_file_reader)->num_record_batches();
   arrow::RecordBatchVector record_batch_vector;
   record_batch_vector.reserve(num_record_batches);
   for (int i = 0; i < num_record_batches; ++i) {
@@ -283,12 +284,12 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     std::vector<absl::StatusOr<size_t>> results(num_arrow_urls);
     absl::BlockingCounter blocking_counter(num_arrow_urls);
     for (size_t i = 0; i < num_arrow_urls; ++i) {
-      thread_pool_.Schedule([&url_reader = url_reader_,
-                             &url = request->arrow_urls(i),
-                             &result = results[i], &blocking_counter] {
-        result = ProcessArrowUrl(url_reader, url, *filter_expression);
-        blocking_counter.DecrementCount();
-      });
+      thread_pool_.Schedule(
+          [&url_reader = url_reader_, &url = request->arrow_urls(i),
+           &result = results[i], &filter_expression, &blocking_counter] {
+            result = ProcessArrowUrl(url_reader, url, *filter_expression);
+            blocking_counter.DecrementCount();
+          });
     }
 
     blocking_counter.Wait();
