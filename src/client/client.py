@@ -63,8 +63,12 @@ def main(cloud_run_url, arrow_urls_file):
     request.arrow_urls.extend(arrow_urls)
 
     response = stub.Query(request)
+
+    total_rows = 0
     for arrow_url, num_rows in zip(arrow_urls, response.num_rows):
         print(f'{arrow_url}: {num_rows} rows')
+        total_rows += num_rows
+    print(f'total number of rows: {total_rows}')
 
 
 if __name__ == '__main__':
