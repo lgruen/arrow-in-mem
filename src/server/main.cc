@@ -208,7 +208,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   }
 
   arrow::dataset::InMemoryDataset in_memory_dataset{
-      schema, std::shared_ptr<arrow::dataset::RecordBatchGenerator>(
+      schema, std::make_shared<arrow::dataset::RecordBatchGenerator>(
                   std::move(*record_batch_generator))};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
