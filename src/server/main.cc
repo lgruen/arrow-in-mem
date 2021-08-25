@@ -211,12 +211,12 @@ absl::StatusOr<size_t> ProcessArrowUrl(
           absl::StrCat("Failed to read record batch ", i, " for ", url, ": ",
                        record_batch.status().ToString()));
     }
-    record_batch_vector.push_back(*record_batch);
+    record_batch_vector.push_back(std::move(*record_batch));
   }
 
-  arrow::dataset::InMemoryDataset in_memory_dataset{schema,
-                                                    record_batch_vector};
-  auto scanner_builder = in_memory_dataset.NewScan();
+  auto in_memory_dataset = std::make_shared<arrow::dataset::InMemoryDataset>(
+      schema, std::move(record_batch_vector));
+  auto scanner_builder = in_memory_dataset->NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to create scanner builder for ", url, ": ",
@@ -263,7 +263,7 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
     const seqr::QueryRequest& request) {
   // TODO(@lgruen): implement this!
   namespace cp = arrow::compute;
-  return cp::less(cp::field_ref("gnomad_genomes_FAF_AF"), cp::literal(0.5));
+  return cp::less(cp::field_ref("gnomad_exomes_AF"), cp::literal(0.0001));
 }
 
 class QueryServiceImpl final : public seqr::QueryService::Service {
