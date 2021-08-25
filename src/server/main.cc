@@ -208,8 +208,8 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   }
 
   arrow::dataset::InMemoryDataset in_memory_dataset{
-      schema, std::make_shared<arrow::dataset::RecordBatchGenerator>(
-                  *record_batch_generator)};
+      schema, std::shared_ptr<arrow::dataset::RecordBatchGenerator>(
+                  std::move(*record_batch_generator))};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
@@ -217,9 +217,19 @@ absl::StatusOr<size_t> ProcessArrowUrl(
                      scanner_builder.status().ToString()));
   }
 
-  (*scanner_builder)->Filter(filter_expression);
+  if (const auto status = (*scanner_builder)->Filter(filter_expression);
+      !status.ok()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Failed to set scanner filter for ", url, ": ", status.ToString()));
+  }
+
   // We parallelize over URLs already, no need for nested parallelism.
-  (*scanner_builder)->UseThreads(false);
+  if (const auto status = (*scanner_builder)->UseThreads(false); !status.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to disable scanner threads for ", url, ": ",
+                     status.ToString()));
+  }
+
   const auto scanner = (*scanner_builder)->Finish();
   if (!scanner.ok()) {
     return absl::InvalidArgumentError(
@@ -227,16 +237,17 @@ absl::StatusOr<size_t> ProcessArrowUrl(
                      scanner.status().ToString()));
   }
 
-  size_t num_rows = 0;  // After filtering.
-  const auto scan_status = (*scanner)->Scan(
-      [&num_rows](const arrow::dataset::TaggedRecordBatch tagged_record_batch) {
-        const auto record_batch = tagged_record_batch.record_batch;
-        num_rows += record_batch->num_rows;
-      });
-
-  if (!scan_status.ok()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "Failed to run scanner on ", url, ": ", scan_status.ToString()));
+  size_t num_rows = 0;  // Count after filtering.
+  if (const auto status = (*scanner)->Scan(
+          [&num_rows](
+              const arrow::dataset::TaggedRecordBatch tagged_record_batch) {
+            const auto record_batch = tagged_record_batch.record_batch;
+            num_rows += record_batch->num_rows();
+            return arrow::Status::OK();
+          });
+      !status.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to run scanner on ", url, ": ", scan.ToString()));
   }
 
   return num_rows;
@@ -245,7 +256,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(
 absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
     const seqr::QueryRequest& request) {
   // TODO(@lgruen): implement this!
-  using cp = arrow::compute;
+  namespace cp = arrow::compute;
   return cp::less(cp::field_ref("gnomad_genomes_FAF_AF"), cp::literal(0.5));
 }
 
