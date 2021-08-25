@@ -207,8 +207,8 @@ absl::StatusOr<size_t> ProcessArrowUrl(
                      record_batch_generator.status().ToString()));
   }
 
-  arrow::dataset::InMemoryDataset in_memory_dataset{schema,
-                                                    record_batch_generator};
+  arrow::dataset::InMemoryDataset in_memory_dataset{
+      schema, std::make_shared(*record_batch_generator)};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
