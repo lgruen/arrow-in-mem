@@ -46,3 +46,11 @@ For gRPC debugging, the following environment variables are helpful:
 export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=secure_endpoint
 ```
+
+## Debug build
+
+```bash
+docker build --build-arg BASE_IMAGE=seqr-query-backend-base --tag seqr-query-backend-debug -f Dockerfile.debug .
+
+docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
+```
