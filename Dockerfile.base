@@ -107,6 +107,7 @@ RUN mkdir -p /build/arrow && cd /build/arrow && \
     cmake ../cpp \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
+    -DARROW_BUILD_STATIC=ON \
     -DARROW_COMPUTE=ON \
     -DARROW_DATASET=ON \
     -DARROW_PARQUET=ON \
