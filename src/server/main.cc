@@ -5,6 +5,9 @@
 #include <absl/synchronization/blocking_counter.h>
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
+#include <arrow/compute/exec.h>
+#include <arrow/dataset/dataset.h>
+#include <arrow/dataset/scanner.h>
 #include <arrow/io/memory.h>
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
@@ -172,8 +175,9 @@ class GcsReader : public UrlReader {
           kNumThreadPoolWorkers)};
 };
 
-absl::StatusOr<size_t> ProcessUrl(const UrlReader& url_reader,
-                                      const std::string_view url) {
+absl::StatusOr<size_t> ProcessArrowUrl(
+    const UrlReader& url_reader, const std::string_view url,
+    const arrow::compute::Expression& filter_expression) {
   const auto data = url_reader.Read(url);
   if (!data.ok()) {
     return absl::InvalidArgumentError(
@@ -195,28 +199,71 @@ absl::StatusOr<size_t> ProcessUrl(const UrlReader& url_reader,
   }
 
   const auto schema = (*record_batch_file_reader)->schema();
-  while (true) {
-    auto record_batch = (*record_batch_file_reader)->Next();
+
+  const int num_record_batches =
+      (*record_batch_file_reader)->num_record_batches();
+  arrow::RecordBatchVector record_batch_vector;
+  record_batch_vector.reserve(num_record_batches);
+  for (int i = 0; i < num_record_batches; ++i) {
+    auto record_batch = (*record_batch_file_reader)->ReadRecordBatch(i);
     if (!record_batch.ok()) {
       return absl::InvalidArgumentError(
-          absl::StrCat("Failed to read record batch for ", url, ": ",
-                       record_batch_file_reader.status().ToString()));
+          absl::StrCat("Failed to read record batch ", i, " for ", url, ": ",
+                       record_batch.status().ToString()));
     }
-
-    if (record_batch == nullptr) {
-      break;  // All done.
-    }
-
-    ProcessRecordBatch(*record_batch);
+    record_batch_vector.push_back(*record_batch);
   }
 
-  const auto num_rows = (*record_batch_file_reader)->CountRows();
-  if (!num_rows.ok()) {
+  arrow::dataset::InMemoryDataset in_memory_dataset{schema,
+                                                    record_batch_vector};
+  auto scanner_builder = in_memory_dataset.NewScan();
+  if (!scanner_builder.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to create scanner builder for ", url, ": ",
+                     scanner_builder.status().ToString()));
+  }
+
+  if (const auto status = (*scanner_builder)->Filter(filter_expression);
+      !status.ok()) {
     return absl::InvalidArgumentError(absl::StrCat(
-        "Failed to count rows for ", url, ": ", num_rows.status().ToString()));
+        "Failed to set scanner filter for ", url, ": ", status.ToString()));
   }
 
-  return *num_rows;
+  // We parallelize over URLs already, no need for nested parallelism.
+  if (const auto status = (*scanner_builder)->UseThreads(false); !status.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to disable scanner threads for ", url, ": ",
+                     status.ToString()));
+  }
+
+  const auto scanner = (*scanner_builder)->Finish();
+  if (!scanner.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to create scanner for ", url, ": ",
+                     scanner.status().ToString()));
+  }
+
+  size_t num_rows = 0;  // Count after filtering.
+  if (const auto status = (*scanner)->Scan(
+          [&num_rows](
+              const arrow::dataset::TaggedRecordBatch tagged_record_batch) {
+            const auto record_batch = tagged_record_batch.record_batch;
+            num_rows += record_batch->num_rows();
+            return arrow::Status::OK();
+          });
+      !status.ok()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Failed to run scanner on ", url, ": ", status.ToString()));
+  }
+
+  return num_rows;
+}
+
+absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
+    const seqr::QueryRequest& request) {
+  // TODO(@lgruen): implement this!
+  namespace cp = arrow::compute;
+  return cp::less(cp::field_ref("gnomad_genomes_FAF_AF"), cp::literal(0.5));
 }
 
 class QueryServiceImpl final : public seqr::QueryService::Service {
@@ -227,16 +274,22 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   grpc::Status Query(grpc::ServerContext* const context,
                      const seqr::QueryRequest* const request,
                      seqr::QueryResponse* const response) override {
+    const auto filter_expression = BuildFilterExpression(*request);
+    if (!filter_expression.ok()) {
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                          std::string(filter_expression.status().message()));
+    }
+
     const size_t num_arrow_urls = request->arrow_urls_size();
     std::vector<absl::StatusOr<size_t>> results(num_arrow_urls);
     absl::BlockingCounter blocking_counter(num_arrow_urls);
     for (size_t i = 0; i < num_arrow_urls; ++i) {
-      thread_pool_.Schedule([&url_reader = url_reader_,
-                             &url = request->arrow_urls(i),
-                             &result = results[i], &blocking_counter] {
-        result = GetNumRows(url_reader, url);
-        blocking_counter.DecrementCount();
-      });
+      thread_pool_.Schedule(
+          [&url_reader = url_reader_, &url = request->arrow_urls(i),
+           &result = results[i], &filter_expression, &blocking_counter] {
+            result = ProcessArrowUrl(url_reader, url, *filter_expression);
+            blocking_counter.DecrementCount();
+          });
     }
 
     blocking_counter.Wait();
