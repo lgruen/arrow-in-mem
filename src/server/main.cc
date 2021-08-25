@@ -199,19 +199,22 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   }
 
   const auto schema = (*record_batch_file_reader)->schema();
-  auto record_batch_generator =
-      (*record_batch_file_reader)->GetRecordBatchGenerator();
-  if (!record_batch_generator.ok()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Failed to create record batch generator for ", url, ": ",
-                     record_batch_generator.status().ToString()));
+
+  const int num_record_batches = (*record_batch_file_reader)->num_record_batches());
+  arrow::RecordBatchVector record_batch_vector;
+  record_batch_vector.reserve(num_record_batches);
+  for (int i = 0; i < num_record_batches; ++i) {
+    auto record_batch = (*record_batch_file_reader)->ReadRecordBatch(i);
+    if (!record_batch.ok()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Failed to read record batch ", i, " for ", url, ": ",
+                       record_batch.status().ToString()));
+    }
+    record_batch_vector.push_back(*record_batch);
   }
 
-  auto shared_record_batch_generator =
-      std::make_shared<arrow::dataset::RecordBatchGenerator>(
-          std::move(*record_batch_generator));
-  arrow::dataset::InMemoryDataset in_memory_dataset{
-      schema, std::move(shared_record_batch_generator)};
+  arrow::dataset::InMemoryDataset in_memory_dataset{schema,
+                                                    record_batch_vector};
   auto scanner_builder = in_memory_dataset.NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
