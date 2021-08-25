@@ -31,6 +31,7 @@ target_link_libraries(server PRIVATE
     # We're linking Arrow statically due to
     # https://issues.apache.org/jira/browse/ARROW-13256.
     arrow_static
+    arrow_dataset
     google-cloud-cpp::storage
     gRPC::grpc++_reflection
     proto
