@@ -263,7 +263,7 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
     const seqr::QueryRequest& request) {
   // TODO(@lgruen): implement this!
   namespace cp = arrow::compute;
-  return cp::less(cp::field_ref("gnomad_genomes_FAF_AF"), cp::literal(0.05));
+  return cp::less(cp::field_ref("gnomad_genomes_AF"), cp::literal(0.05));
 }
 
 class QueryServiceImpl final : public seqr::QueryService::Service {
