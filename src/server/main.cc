@@ -199,7 +199,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   }
 
   const auto schema = (*record_batch_file_reader)->schema();
-  const auto record_batch_generator =
+  auto record_batch_generator =
       (*record_batch_file_reader)->GetRecordBatchGenerator();
   if (!record_batch_generator.ok()) {
     return absl::InvalidArgumentError(
