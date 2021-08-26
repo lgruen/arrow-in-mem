@@ -2,6 +2,8 @@
 
 An experimental backend that could be an alternative to the Elasticsearch deployment that seqr currently uses.
 
+To convert the annotated Hail tables to the [Apache Arrow](https://arrow.apache.org/) format that this backend uses, see the [`pipeline`](pipeline) directory.
+
 ## Build
 
 Build the "base" image, which contains library dependencies that rarely need updating,
