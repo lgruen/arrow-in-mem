@@ -207,7 +207,7 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
     case seqr::Expression::kCall: {
       const auto& call = filter_expression.call();
       std::vector<cp::Expression> arguments;
-      arguments.resize(call.arguments_size());
+      arguments.reserve(call.arguments_size());
       for (const auto& argument : call.arguments()) {
         auto expression = BuildFilterExpression(argument);
         if (!expression.ok()) {
