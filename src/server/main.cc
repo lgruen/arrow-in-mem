@@ -1,4 +1,5 @@
 #include <absl/base/thread_annotations.h>
+#include <absl/container/flat_hash_set.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/strip.h>
@@ -175,9 +176,78 @@ class GcsReader : public UrlReader {
           kNumThreadPoolWorkers)};
 };
 
-absl::StatusOr<size_t> ProcessArrowUrl(
-    const UrlReader& url_reader, const std::string_view url,
-    const arrow::compute::Expression& filter_expression) {
+// Returns an Arrow compute expression from the protobuf specification.
+absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
+    const seqr::Expression& filter_expression) {
+  namespace cp = arrow::compute;
+  switch (filter_expression.type_case()) {
+    case seqr::Expression::TYPE_NOT_SET:
+      return absl::InvalidArgumentError("Expression type not set");
+    case seqr::Expression::kColumn:
+      return cp::field_ref(filter_expression.column());
+    case seqr::Expression::kLiteral: {
+      const auto& literal = filter_expression.literal();
+      switch (literal.type_case()) {
+        case seqr::Expression::Literal::TYPE_NOT_SET:
+          return absl::InvalidArgumentError("Literal type not set");
+        case seqr::Expression::Literal::kBoolVal:
+          return cp::literal(literal.bool_val());
+        case seqr::Expression::Literal::kInt32Val:
+          return cp::literal(literal.int32_val());
+        case seqr::Expression::Literal::kInt64Val:
+          return cp::literal(literal.int64_val());
+        case seqr::Expression::Literal::kFloatVal:
+          return cp::literal(literal.float_val());
+        case seqr::Expression::Literal::kDoubleVal:
+          return cp::literal(literal.double_val());
+        case seqr::Expression::Literal::kStringVal:
+          return cp::literal(literal.string_val());
+      }
+    }
+    case seqr::Expression::kCall: {
+      const auto& call = filter_expression.call();
+      std::vector<cp::Expression> arguments;
+      arguments.reserve(call.arguments_size());
+      for (const auto& argument : call.arguments()) {
+        auto expression = BuildFilterExpression(argument);
+        if (!expression.ok()) {
+          return expression.status();
+        }
+        arguments.push_back(*std::move(expression));
+      }
+      return cp::call(call.function_name(), std::move(arguments));
+    }
+  }
+}
+
+struct ScannerOptions {
+  std::vector<std::string> projection_columns;
+  arrow::compute::Expression filter_expression;
+};
+
+absl::StatusOr<ScannerOptions> BuildScannerOptions(
+    const seqr::QueryRequest& request) {
+  auto filter_expression = BuildFilterExpression(request.filter_expression());
+  if (!filter_expression.ok()) {
+    return filter_expression.status();
+  }
+
+  absl::flat_hash_set<std::string> projection_columns;
+  for (const auto& projection_column : request.projection_columns()) {
+    projection_columns.insert(projection_column);
+  }
+
+  for (const auto& sort_column : request.sort_columns()) {
+    projection_columns.insert(sort_column);
+  }
+
+  return ScannerOptions{{projection_columns.begin(), projection_columns.end()},
+                        *std::move(filter_expression)};
+}
+
+absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
+                                       const std::string_view url,
+                                       const ScannerOptions& scanner_options) {
   const auto data = url_reader.Read(url);
   if (!data.ok()) {
     return absl::InvalidArgumentError(
@@ -187,7 +257,6 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   arrow::ipc::IpcReadOptions ipc_read_options;
   // We parallelize over URLs already, no need for nested parallelism.
   ipc_read_options.use_threads = false;
-  // TODO(@lgruen): set included_fields based on fields present in the query.
 
   arrow::io::BufferReader buffer_reader{*data};
   auto record_batch_file_reader =
@@ -223,7 +292,15 @@ absl::StatusOr<size_t> ProcessArrowUrl(
                      scanner_builder.status().ToString()));
   }
 
-  if (const auto status = (*scanner_builder)->Filter(filter_expression);
+  if (const auto status =
+          (*scanner_builder)->Project(scanner_options.projection_columns);
+      !status.ok()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Failed to set projection columns for ", url, ": ", status.ToString()));
+  }
+
+  if (const auto status =
+          (*scanner_builder)->Filter(scanner_options.filter_expression);
       !status.ok()) {
     return absl::InvalidArgumentError(absl::StrCat(
         "Failed to set scanner filter for ", url, ": ", status.ToString()));
@@ -259,13 +336,6 @@ absl::StatusOr<size_t> ProcessArrowUrl(
   return num_rows;
 }
 
-absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
-    const seqr::QueryRequest& request) {
-  // TODO(@lgruen): implement this!
-  namespace cp = arrow::compute;
-  return cp::less(cp::field_ref("gnomad_exomes_AF"), cp::literal(0.0001));
-}
-
 class QueryServiceImpl final : public seqr::QueryService::Service {
  public:
   QueryServiceImpl(const UrlReader& url_reader) : url_reader_(url_reader) {}
@@ -274,10 +344,10 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   grpc::Status Query(grpc::ServerContext* const context,
                      const seqr::QueryRequest* const request,
                      seqr::QueryResponse* const response) override {
-    const auto filter_expression = BuildFilterExpression(*request);
-    if (!filter_expression.ok()) {
+    const auto scanner_options = BuildScannerOptions(*request);
+    if (!scanner_options.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                          std::string(filter_expression.status().message()));
+                          std::string(scanner_options.status().message()));
     }
 
     const size_t num_arrow_urls = request->arrow_urls_size();
@@ -286,20 +356,24 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     for (size_t i = 0; i < num_arrow_urls; ++i) {
       thread_pool_.Schedule(
           [&url_reader = url_reader_, &url = request->arrow_urls(i),
-           &result = results[i], &filter_expression, &blocking_counter] {
-            result = ProcessArrowUrl(url_reader, url, *filter_expression);
+           &result = results[i], &scanner_options, &blocking_counter] {
+            result = ProcessArrowUrl(url_reader, url, *scanner_options);
             blocking_counter.DecrementCount();
           });
     }
 
     blocking_counter.Wait();
+
+    size_t num_results = 0;
     for (const auto& result : results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      response->add_num_rows(*result);
+      num_results += *result;
     }
+
+    response->set_num_results(num_results);
 
     return grpc::Status::OK;
   }
