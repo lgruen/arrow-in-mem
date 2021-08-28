@@ -221,7 +221,6 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
 }
 
 struct ScannerOptions {
-  std::vector<std::string> included_fields;  // Which fields to read.
   std::vector<std::string> projection_columns;
   arrow::compute::Expression filter_expression;
 };
@@ -233,29 +232,16 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
     return filter_expression.status();
   }
 
-  absl::flat_hash_set<std::string> included_fields;
-  for (const auto& field_ref :
-       arrow::compute::FieldsInExpression(*filter_expression)) {
-    const std::string* const name = field_ref.name();
-    if (name == nullptr) {
-      return absl::InvalidArgumentError("Invalid field reference");
-    }
-    included_fields.insert(*name);
-  }
-
   absl::flat_hash_set<std::string> projection_columns;
   for (const auto& projection_column : request.projection_columns()) {
     projection_columns.insert(projection_column);
-    included_fields.insert(projection_column);
   }
 
   for (const auto& sort_column : request.sort_columns()) {
     projection_columns.insert(sort_column);
-    included_fields.insert(sort_column);
   }
 
-  return ScannerOptions{{included_fields.begin(), included_fields.end()},
-                        {projection_columns.begin(), projection_columns.end()},
+  return ScannerOptions{{projection_columns.begin(), projection_columns.end()},
                         *std::move(filter_expression)};
 }
 
