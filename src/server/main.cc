@@ -222,8 +222,8 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
 
 struct ScannerOptions {
   std::vector<std::string> included_fields;  // Which fields to read.
-  cp::Expression filter_expression;
   std::vector<std::string> projection_columns;
+  arrow::compute::Expression filter_expression;
 };
 
 absl::StatusOr<ScannerOptions> BuildScannerOptions(
@@ -243,7 +243,7 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
     included_fields.insert(*name);
   }
 
-  std::flat_hash_set<std::string> projection_columns;
+  absl::flat_hash_set<std::string> projection_columns;
   for (const auto& projection_column : request.projection_columns()) {
     projection_columns.insert(projection_column);
     included_fields.insert(projection_column);
@@ -255,8 +255,8 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
   }
 
   return ScannerOptions{{included_fields.begin(), included_fields.end()},
-                        *std::move(filter_expression),
-                        {projection_columns.begin(), projection_columns.end()}};
+                        {projection_columns.begin(), projection_columns.end()},
+                        *std::move(filter_expression)};
 }
 
 absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
