@@ -2,7 +2,6 @@
 
 import click
 import os
-import google.protobuf.text_format
 import seqr_query_service_pb2
 import seqr_query_service_pb2_grpc
 
@@ -62,6 +61,8 @@ def main(query_text_proto_file, cloud_run_url):
     stub = seqr_query_service_pb2_grpc.QueryServiceStub(channel)
 
     with open(query_text_proto_file, 'rt') as text_proto:
+        import google.protobuf.text_format
+
         request = google.protobuf.text_format.Parse(
             text_proto.read(), seqr_query_service_pb2.QueryRequest()
         )
