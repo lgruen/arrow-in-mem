@@ -32,9 +32,11 @@ docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ### Test client
 
 ```bash
-pip3 install -r src/client/requirements.txt
+cd src/client
 
-src/client/client.py --arrow_urls_file=$HOME/arrow_urls.txt
+pip3 install -r requirements.txt
+
+./client.py --request_text_proto_file=example_query.textproto
 ```
 
 ### Debug build
@@ -66,7 +68,11 @@ gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --con
 Either set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or run the client from a Compute Engine VM. The associated service account needs to invoker permissions for the Cloud Run deployment.
 
 ```bash
-src/client/client.py --cloud_run_url=$(gcloud run services describe seqr-query-backend --platform managed --region australia-southeast1 --format 'value(status.url)') --arrow_urls_file=$HOME/arrow_urls.txt
+CLOUD_RUN_URL=$(gcloud run services describe seqr-query-backend --platform managed --region australia-southeast1 --format 'value(status.url)')
+
+cd src/client
+
+./client.py --request_text_proto_file=example_query.textproto --cloud_run_url=$CLOUD_RUN_URL
 ```
 
 For gRPC debugging, the following environment variables are helpful:
