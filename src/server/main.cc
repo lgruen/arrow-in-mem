@@ -250,8 +250,8 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
   }
 
   for (const auto& sort_column : request.sort_columns()) {
-    projection_columns.insert(projection_column);
-    included_fields.insert(projection_column);
+    projection_columns.insert(sort_column);
+    included_fields.insert(sort_column);
   }
 
   return ScannerOptions{{included_fields.begin(), included_fields.end()},
