@@ -257,7 +257,6 @@ absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
   arrow::ipc::IpcReadOptions ipc_read_options;
   // We parallelize over URLs already, no need for nested parallelism.
   ipc_read_options.use_threads = false;
-  ipc_read_options.included_fields = scanner_options.included_fields;
 
   arrow::io::BufferReader buffer_reader{*data};
   auto record_batch_file_reader =
@@ -357,20 +356,24 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     for (size_t i = 0; i < num_arrow_urls; ++i) {
       thread_pool_.Schedule(
           [&url_reader = url_reader_, &url = request->arrow_urls(i),
-           &result = results[i], &filter_expression, &blocking_counter] {
+           &result = results[i], &scanner_options, &blocking_counter] {
             result = ProcessArrowUrl(url_reader, url, *scanner_options);
             blocking_counter.DecrementCount();
           });
     }
 
     blocking_counter.Wait();
+
+    size_t num_results = 0;
     for (const auto& result : results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      response->add_num_rows(*result);
+      num_results += *result;
     }
+
+    response->set_num_results(num_results);
 
     return grpc::Status::OK;
   }
