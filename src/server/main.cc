@@ -344,8 +344,10 @@ absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
           [&result,
            num_rows](arrow::dataset::TaggedRecordBatch tagged_record_batch) {
             auto& record_batch = tagged_record_batch.record_batch;
-            *num_rows += record_batch->num_rows();
-            result.push_back(std::move(record_batch));
+            if (record_batch->num_rows() > 0) {
+              *num_rows += record_batch->num_rows();
+              result.push_back(std::move(record_batch));
+            }
             return arrow::Status::OK();
           });
       !status.ok()) {
@@ -420,18 +422,17 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
                        buffer_output_stream.status().message()));
     }
 
-    auto stream_writer =
-        arrow::ipc::MakeStreamWriter(*buffer_output_stream, schema);
-    if (!stream_writer.ok()) {
+    auto file_writer =
+        arrow::ipc::MakeFileWriter(*buffer_output_stream, schema);
+    if (!file_writer.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                          absl::StrCat("Failed to create stream writer: ",
-                                       stream_writer.status().message()));
+                          absl::StrCat("Failed to create file writer: ",
+                                       file_writer.status().message()));
     }
 
     for (const auto& result : partial_results) {
       for (const auto& record_batch : *result) {
-        if (const auto status =
-                (*stream_writer)->WriteRecordBatch(*record_batch);
+        if (const auto status = (*file_writer)->WriteRecordBatch(*record_batch);
             !status.ok()) {
           return grpc::Status(
               grpc::StatusCode::INVALID_ARGUMENT,
@@ -440,10 +441,10 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
       }
     }
 
-    if (const auto status = (*stream_writer)->Close(); !status.ok()) {
+    if (const auto status = (*file_writer)->Close(); !status.ok()) {
       return grpc::Status(
           grpc::StatusCode::INVALID_ARGUMENT,
-          absl::StrCat("Failed to close stream writer: ", status.message()));
+          absl::StrCat("Failed to close file writer: ", status.message()));
     }
 
     const auto buffer = (*buffer_output_stream)->Finish();
