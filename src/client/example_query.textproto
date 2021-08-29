@@ -19,4 +19,4 @@ filter_expression {
 sort_keys: {
     column: "xpos"
 }
-max_results: 100
+rows_limit: 100
