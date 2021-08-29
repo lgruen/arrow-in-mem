@@ -6,38 +6,6 @@ service QueryService {
   rpc Query(QueryRequest) returns (QueryResponse) {}
 }
 
-// This follows the Apache Arrow compute expression representation.
-message Expression {
-  oneof type {
-    string column = 1;   // Reference to a column by name.
-    Literal literal = 2; // A literal value.
-    Call call = 3;       // A function call.
-  }
-
-  message Literal {
-    oneof type {
-      bool bool_val = 1;
-      int32 int32_val = 2;
-      int64 int64_val = 3;
-      float float_val = 4;
-      double double_val = 5;
-      string string_val = 6;
-    }
-  }
-
-  message Call {
-    // See https://arrow.apache.org/docs/cpp/compute.html for available
-    // functions.
-    //
-    // The following non-standard functions are available:
-    // - list_contains: checks whether a list contains a particular value.
-    string function_name = 1;
-
-    // The number of arguments depends on the function.
-    repeated Expression arguments = 2;
-  }
-}
-
 message QueryRequest {
   // A list of URLs to Arrow files (e.g. on GCS) that should be scanned ("FROM"
   // in SQL).
@@ -46,20 +14,63 @@ message QueryRequest {
   // Which columns to return ("SELECT" in SQL).
   repeated string projection_columns = 2;
 
+  // This follows the Apache Arrow compute expression representation.
+  message Expression {
+    oneof type {
+      string column = 1;   // Reference to a column by name.
+      Literal literal = 2; // A literal value.
+      Call call = 3;       // A function call.
+    }
+
+    message Literal {
+      oneof type {
+        bool bool_val = 1;
+        int32 int32_val = 2;
+        int64 int64_val = 3;
+        float float_val = 4;
+        double double_val = 5;
+        string string_val = 6;
+      }
+    }
+
+    message Call {
+      // See https://arrow.apache.org/docs/cpp/compute.html for available
+      // functions.
+      //
+      // The following non-standard functions are available:
+      // - list_contains: checks whether a list contains a particular value.
+      string function_name = 1;
+
+      // The number of arguments depends on the function.
+      repeated Expression arguments = 2;
+    }
+  }
+
   // The expression to filter by ("WHERE" in SQL).
   Expression filter_expression = 3;
 
-  // Which columns to sort by ("ORDER BY" in SQL).
-  repeated string sort_columns = 4;
+  message SortKey {
+    string column = 1;        // Reference to a column by name.
+    bool sort_descending = 2; // Sort order ("ASC" / "DESC" in SQL).
+  }
 
-  // Sort order ("ASC" / "DESC" in SQL).
-  bool sort_ascending = 5;
+  // How to sort the rows ("ORDER BY" in SQL).
+  repeated SortKey sort_keys = 4;
 
-  // The maximum number of results to return ("LIMIT" in SQL).
-  int32 max_results = 6;
+  // The maximum number of rows to return ("LIMIT" in SQL).
+  int32 rows_limit = 5;
 
-  // The index of the first result to return ("OFFSET" in SQL).
-  int32 first_result_index = 7;
+  // The index of the first row to return ("OFFSET" in SQL).
+  int32 rows_offset = 6;
+
+  // The number of shards to use to process this query.
+  int32 num_shards = 7;
 }
 
-message QueryResponse { int32 num_results = 1; }
+message QueryResponse {
+  // The number of rows contained in the result table.
+  int32 num_rows = 1;
+
+  // The serialized result table, in Apache Arrow IPC format.
+  bytes serialized_table = 2;
+}

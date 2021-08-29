@@ -19,57 +19,57 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\xd1\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12+\n\x07literal\x18\x02 \x01(\x0b\x32\x18.seqr.Expression.LiteralH\x00\x12%\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\x15.seqr.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1a\x42\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12#\n\targuments\x18\x02 \x03(\x0b\x32\x10.seqr.ExpressionB\x06\n\x04type\"\xca\x01\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12+\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x10.seqr.Expression\x12\x14\n\x0csort_columns\x18\x04 \x03(\t\x12\x16\n\x0esort_ascending\x18\x05 \x01(\x08\x12\x13\n\x0bmax_results\x18\x06 \x01(\x05\x12\x1a\n\x12\x66irst_result_index\x18\x07 \x01(\x05\"$\n\rQueryResponse\x12\x13\n\x0bnum_results\x18\x01 \x01(\x05\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\x93\x05\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12-\n\tsort_keys\x18\x04 \x03(\x0b\x32\x1a.seqr.QueryRequest.SortKey\x12\x12\n\nrows_limit\x18\x05 \x01(\x05\x12\x13\n\x0brows_offset\x18\x06 \x01(\x05\x12\x12\n\nnum_shards\x18\x07 \x01(\x05\x1a\xf8\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\x1a\x32\n\x07SortKey\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\t\x12\x17\n\x0fsort_descending\x18\x02 \x01(\x08\";\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x18\n\x10serialized_table\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
 )
 
 
 
 
-_EXPRESSION_LITERAL = _descriptor.Descriptor(
+_QUERYREQUEST_EXPRESSION_LITERAL = _descriptor.Descriptor(
   name='Literal',
-  full_name='seqr.Expression.Literal',
+  full_name='seqr.QueryRequest.Expression.Literal',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='bool_val', full_name='seqr.Expression.Literal.bool_val', index=0,
+      name='bool_val', full_name='seqr.QueryRequest.Expression.Literal.bool_val', index=0,
       number=1, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='int32_val', full_name='seqr.Expression.Literal.int32_val', index=1,
+      name='int32_val', full_name='seqr.QueryRequest.Expression.Literal.int32_val', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='int64_val', full_name='seqr.Expression.Literal.int64_val', index=2,
+      name='int64_val', full_name='seqr.QueryRequest.Expression.Literal.int64_val', index=2,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='float_val', full_name='seqr.Expression.Literal.float_val', index=3,
+      name='float_val', full_name='seqr.QueryRequest.Expression.Literal.float_val', index=3,
       number=4, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='double_val', full_name='seqr.Expression.Literal.double_val', index=4,
+      name='double_val', full_name='seqr.QueryRequest.Expression.Literal.double_val', index=4,
       number=5, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='string_val', full_name='seqr.Expression.Literal.string_val', index=5,
+      name='string_val', full_name='seqr.QueryRequest.Expression.Literal.string_val', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -87,32 +87,32 @@ _EXPRESSION_LITERAL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='type', full_name='seqr.Expression.Literal.type',
+      name='type', full_name='seqr.QueryRequest.Expression.Literal.type',
       index=0, containing_type=None,
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=152,
-  serialized_end=296,
+  serialized_start=409,
+  serialized_end=553,
 )
 
-_EXPRESSION_CALL = _descriptor.Descriptor(
+_QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
   name='Call',
-  full_name='seqr.Expression.Call',
+  full_name='seqr.QueryRequest.Expression.Call',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='function_name', full_name='seqr.Expression.Call.function_name', index=0,
+      name='function_name', full_name='seqr.QueryRequest.Expression.Call.function_name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='arguments', full_name='seqr.Expression.Call.arguments', index=1,
+      name='arguments', full_name='seqr.QueryRequest.Expression.Call.arguments', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -130,34 +130,34 @@ _EXPRESSION_CALL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=298,
-  serialized_end=364,
+  serialized_start=555,
+  serialized_end=634,
 )
 
-_EXPRESSION = _descriptor.Descriptor(
+_QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
   name='Expression',
-  full_name='seqr.Expression',
+  full_name='seqr.QueryRequest.Expression',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='column', full_name='seqr.Expression.column', index=0,
+      name='column', full_name='seqr.QueryRequest.Expression.column', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='literal', full_name='seqr.Expression.literal', index=1,
+      name='literal', full_name='seqr.QueryRequest.Expression.literal', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='call', full_name='seqr.Expression.call', index=2,
+      name='call', full_name='seqr.QueryRequest.Expression.call', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -166,7 +166,7 @@ _EXPRESSION = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_EXPRESSION_LITERAL, _EXPRESSION_CALL, ],
+  nested_types=[_QUERYREQUEST_EXPRESSION_LITERAL, _QUERYREQUEST_EXPRESSION_CALL, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -175,15 +175,52 @@ _EXPRESSION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='type', full_name='seqr.Expression.type',
+      name='type', full_name='seqr.QueryRequest.Expression.type',
       index=0, containing_type=None,
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=35,
-  serialized_end=372,
+  serialized_start=266,
+  serialized_end=642,
 )
 
+_QUERYREQUEST_SORTKEY = _descriptor.Descriptor(
+  name='SortKey',
+  full_name='seqr.QueryRequest.SortKey',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='column', full_name='seqr.QueryRequest.SortKey.column', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='sort_descending', full_name='seqr.QueryRequest.SortKey.sort_descending', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=644,
+  serialized_end=694,
+)
 
 _QUERYREQUEST = _descriptor.Descriptor(
   name='QueryRequest',
@@ -215,28 +252,28 @@ _QUERYREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='sort_columns', full_name='seqr.QueryRequest.sort_columns', index=3,
-      number=4, type=9, cpp_type=9, label=3,
+      name='sort_keys', full_name='seqr.QueryRequest.sort_keys', index=3,
+      number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='sort_ascending', full_name='seqr.QueryRequest.sort_ascending', index=4,
-      number=5, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
+      name='rows_limit', full_name='seqr.QueryRequest.rows_limit', index=4,
+      number=5, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='max_results', full_name='seqr.QueryRequest.max_results', index=5,
+      name='rows_offset', full_name='seqr.QueryRequest.rows_offset', index=5,
       number=6, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='first_result_index', full_name='seqr.QueryRequest.first_result_index', index=6,
+      name='num_shards', full_name='seqr.QueryRequest.num_shards', index=6,
       number=7, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -245,7 +282,7 @@ _QUERYREQUEST = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[],
+  nested_types=[_QUERYREQUEST_EXPRESSION, _QUERYREQUEST_SORTKEY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -254,8 +291,8 @@ _QUERYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=375,
-  serialized_end=577,
+  serialized_start=35,
+  serialized_end=694,
 )
 
 
@@ -268,9 +305,16 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='num_results', full_name='seqr.QueryResponse.num_results', index=0,
+      name='num_rows', full_name='seqr.QueryResponse.num_rows', index=0,
       number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='serialized_table', full_name='seqr.QueryResponse.serialized_table', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -286,77 +330,88 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=579,
-  serialized_end=615,
+  serialized_start=696,
+  serialized_end=755,
 )
 
-_EXPRESSION_LITERAL.containing_type = _EXPRESSION
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['bool_val'])
-_EXPRESSION_LITERAL.fields_by_name['bool_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['int32_val'])
-_EXPRESSION_LITERAL.fields_by_name['int32_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['int64_val'])
-_EXPRESSION_LITERAL.fields_by_name['int64_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['float_val'])
-_EXPRESSION_LITERAL.fields_by_name['float_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['double_val'])
-_EXPRESSION_LITERAL.fields_by_name['double_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _EXPRESSION_LITERAL.fields_by_name['string_val'])
-_EXPRESSION_LITERAL.fields_by_name['string_val'].containing_oneof = _EXPRESSION_LITERAL.oneofs_by_name['type']
-_EXPRESSION_CALL.fields_by_name['arguments'].message_type = _EXPRESSION
-_EXPRESSION_CALL.containing_type = _EXPRESSION
-_EXPRESSION.fields_by_name['literal'].message_type = _EXPRESSION_LITERAL
-_EXPRESSION.fields_by_name['call'].message_type = _EXPRESSION_CALL
-_EXPRESSION.oneofs_by_name['type'].fields.append(
-  _EXPRESSION.fields_by_name['column'])
-_EXPRESSION.fields_by_name['column'].containing_oneof = _EXPRESSION.oneofs_by_name['type']
-_EXPRESSION.oneofs_by_name['type'].fields.append(
-  _EXPRESSION.fields_by_name['literal'])
-_EXPRESSION.fields_by_name['literal'].containing_oneof = _EXPRESSION.oneofs_by_name['type']
-_EXPRESSION.oneofs_by_name['type'].fields.append(
-  _EXPRESSION.fields_by_name['call'])
-_EXPRESSION.fields_by_name['call'].containing_oneof = _EXPRESSION.oneofs_by_name['type']
-_QUERYREQUEST.fields_by_name['filter_expression'].message_type = _EXPRESSION
-DESCRIPTOR.message_types_by_name['Expression'] = _EXPRESSION
+_QUERYREQUEST_EXPRESSION_LITERAL.containing_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['bool_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['bool_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['int32_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['int32_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['int64_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['int64_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['float_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['float_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['double_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['double_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_val'])
+_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_val'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION_CALL.fields_by_name['arguments'].message_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST_EXPRESSION_CALL.containing_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST_EXPRESSION.fields_by_name['literal'].message_type = _QUERYREQUEST_EXPRESSION_LITERAL
+_QUERYREQUEST_EXPRESSION.fields_by_name['call'].message_type = _QUERYREQUEST_EXPRESSION_CALL
+_QUERYREQUEST_EXPRESSION.containing_type = _QUERYREQUEST
+_QUERYREQUEST_EXPRESSION.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION.fields_by_name['column'])
+_QUERYREQUEST_EXPRESSION.fields_by_name['column'].containing_oneof = _QUERYREQUEST_EXPRESSION.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION.fields_by_name['literal'])
+_QUERYREQUEST_EXPRESSION.fields_by_name['literal'].containing_oneof = _QUERYREQUEST_EXPRESSION.oneofs_by_name['type']
+_QUERYREQUEST_EXPRESSION.oneofs_by_name['type'].fields.append(
+  _QUERYREQUEST_EXPRESSION.fields_by_name['call'])
+_QUERYREQUEST_EXPRESSION.fields_by_name['call'].containing_oneof = _QUERYREQUEST_EXPRESSION.oneofs_by_name['type']
+_QUERYREQUEST_SORTKEY.containing_type = _QUERYREQUEST
+_QUERYREQUEST.fields_by_name['filter_expression'].message_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST.fields_by_name['sort_keys'].message_type = _QUERYREQUEST_SORTKEY
 DESCRIPTOR.message_types_by_name['QueryRequest'] = _QUERYREQUEST
 DESCRIPTOR.message_types_by_name['QueryResponse'] = _QUERYRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Expression = _reflection.GeneratedProtocolMessageType('Expression', (_message.Message,), {
-
-  'Literal' : _reflection.GeneratedProtocolMessageType('Literal', (_message.Message,), {
-    'DESCRIPTOR' : _EXPRESSION_LITERAL,
-    '__module__' : 'seqr_query_service_pb2'
-    # @@protoc_insertion_point(class_scope:seqr.Expression.Literal)
-    })
-  ,
-
-  'Call' : _reflection.GeneratedProtocolMessageType('Call', (_message.Message,), {
-    'DESCRIPTOR' : _EXPRESSION_CALL,
-    '__module__' : 'seqr_query_service_pb2'
-    # @@protoc_insertion_point(class_scope:seqr.Expression.Call)
-    })
-  ,
-  'DESCRIPTOR' : _EXPRESSION,
-  '__module__' : 'seqr_query_service_pb2'
-  # @@protoc_insertion_point(class_scope:seqr.Expression)
-  })
-_sym_db.RegisterMessage(Expression)
-_sym_db.RegisterMessage(Expression.Literal)
-_sym_db.RegisterMessage(Expression.Call)
-
 QueryRequest = _reflection.GeneratedProtocolMessageType('QueryRequest', (_message.Message,), {
+
+  'Expression' : _reflection.GeneratedProtocolMessageType('Expression', (_message.Message,), {
+
+    'Literal' : _reflection.GeneratedProtocolMessageType('Literal', (_message.Message,), {
+      'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION_LITERAL,
+      '__module__' : 'seqr_query_service_pb2'
+      # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression.Literal)
+      })
+    ,
+
+    'Call' : _reflection.GeneratedProtocolMessageType('Call', (_message.Message,), {
+      'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION_CALL,
+      '__module__' : 'seqr_query_service_pb2'
+      # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression.Call)
+      })
+    ,
+    'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION,
+    '__module__' : 'seqr_query_service_pb2'
+    # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression)
+    })
+  ,
+
+  'SortKey' : _reflection.GeneratedProtocolMessageType('SortKey', (_message.Message,), {
+    'DESCRIPTOR' : _QUERYREQUEST_SORTKEY,
+    '__module__' : 'seqr_query_service_pb2'
+    # @@protoc_insertion_point(class_scope:seqr.QueryRequest.SortKey)
+    })
+  ,
   'DESCRIPTOR' : _QUERYREQUEST,
   '__module__' : 'seqr_query_service_pb2'
   # @@protoc_insertion_point(class_scope:seqr.QueryRequest)
   })
 _sym_db.RegisterMessage(QueryRequest)
+_sym_db.RegisterMessage(QueryRequest.Expression)
+_sym_db.RegisterMessage(QueryRequest.Expression.Literal)
+_sym_db.RegisterMessage(QueryRequest.Expression.Call)
+_sym_db.RegisterMessage(QueryRequest.SortKey)
 
 QueryResponse = _reflection.GeneratedProtocolMessageType('QueryResponse', (_message.Message,), {
   'DESCRIPTOR' : _QUERYRESPONSE,
@@ -374,8 +429,8 @@ _QUERYSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=617,
-  serialized_end=683,
+  serialized_start=757,
+  serialized_end=823,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',

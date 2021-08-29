@@ -178,33 +178,36 @@ class GcsReader : public UrlReader {
 
 // Returns an Arrow compute expression from the protobuf specification.
 absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
-    const seqr::Expression& filter_expression) {
+    const seqr::QueryRequest::Expression& filter_expression) {
   namespace cp = arrow::compute;
   switch (filter_expression.type_case()) {
-    case seqr::Expression::TYPE_NOT_SET:
+    case seqr::QueryRequest::Expression::TYPE_NOT_SET:
       return absl::InvalidArgumentError("Expression type not set");
-    case seqr::Expression::kColumn:
+
+    case seqr::QueryRequest::Expression::kColumn:
       return cp::field_ref(filter_expression.column());
-    case seqr::Expression::kLiteral: {
+
+    case seqr::QueryRequest::Expression::kLiteral: {
       const auto& literal = filter_expression.literal();
       switch (literal.type_case()) {
-        case seqr::Expression::Literal::TYPE_NOT_SET:
+        case seqr::QueryRequest::Expression::Literal::TYPE_NOT_SET:
           return absl::InvalidArgumentError("Literal type not set");
-        case seqr::Expression::Literal::kBoolVal:
+        case seqr::QueryRequest::Expression::Literal::kBoolVal:
           return cp::literal(literal.bool_val());
-        case seqr::Expression::Literal::kInt32Val:
+        case seqr::QueryRequest::Expression::Literal::kInt32Val:
           return cp::literal(literal.int32_val());
-        case seqr::Expression::Literal::kInt64Val:
+        case seqr::QueryRequest::Expression::Literal::kInt64Val:
           return cp::literal(literal.int64_val());
-        case seqr::Expression::Literal::kFloatVal:
+        case seqr::QueryRequest::Expression::Literal::kFloatVal:
           return cp::literal(literal.float_val());
-        case seqr::Expression::Literal::kDoubleVal:
+        case seqr::QueryRequest::Expression::Literal::kDoubleVal:
           return cp::literal(literal.double_val());
-        case seqr::Expression::Literal::kStringVal:
+        case seqr::QueryRequest::Expression::Literal::kStringVal:
           return cp::literal(literal.string_val());
       }
     }
-    case seqr::Expression::kCall: {
+
+    case seqr::QueryRequest::Expression::kCall: {
       const auto& call = filter_expression.call();
       std::vector<cp::Expression> arguments;
       arguments.reserve(call.arguments_size());
@@ -364,16 +367,16 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
 
     blocking_counter.Wait();
 
-    size_t num_results = 0;
+    size_t num_rows = 0;
     for (const auto& result : results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      num_results += *result;
+      num_rows += *result;
     }
 
-    response->set_num_results(num_results);
+    response->set_num_rows(num_rows);
 
     return grpc::Status::OK;
   }
