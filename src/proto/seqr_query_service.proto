@@ -79,6 +79,6 @@ message QueryResponse {
   // The number of rows contained in the result table.
   int32 num_rows = 1;
 
-  // The serialized result table, in Apache Arrow IPC format.
-  bytes serialized_table = 2;
+  // Serialized RecordBatches, in Apache Arrow IPC format.
+  bytes record_batches = 2;
 }

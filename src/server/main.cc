@@ -12,6 +12,7 @@
 #include <arrow/io/memory.h>
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
+#include <arrow/ipc/writer.h>
 #include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -32,6 +33,15 @@
 namespace {
 
 constexpr size_t kNumThreadPoolWorkers = 32;
+
+// Abort query if the number of result rows exceeds this value.
+constexpr size_t kMaxRows = 10000;
+
+absl::Status MaxRowsExceededError() {
+  return absl::CancelledError(
+      absl::StrCat("More than ", kMaxRows,
+                   " rows matched; please use a more restrictive search"));
+}
 
 // Adapted from the Abseil thread pool.
 class ThreadPool {
@@ -248,9 +258,15 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
                         *std::move(filter_expression)};
 }
 
-absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
-                                       const std::string_view url,
-                                       const ScannerOptions& scanner_options) {
+absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
+    const UrlReader& url_reader, const std::string_view url,
+    const ScannerOptions& scanner_options,
+    std::atomic<size_t>* const num_rows) {
+  // Early cancellation.
+  if (*num_rows > kMaxRows) {
+    return MaxRowsExceededError();
+  }
+
   const auto data = url_reader.Read(url);
   if (!data.ok()) {
     return absl::InvalidArgumentError(
@@ -323,12 +339,13 @@ absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
                      scanner.status().ToString()));
   }
 
-  size_t num_rows = 0;  // Count after filtering.
+  arrow::RecordBatchVector result;
   if (const auto status = (*scanner)->Scan(
-          [&num_rows](
-              const arrow::dataset::TaggedRecordBatch tagged_record_batch) {
-            const auto record_batch = tagged_record_batch.record_batch;
-            num_rows += record_batch->num_rows();
+          [&result,
+           num_rows](arrow::dataset::TaggedRecordBatch tagged_record_batch) {
+            auto& record_batch = tagged_record_batch.record_batch;
+            *num_rows += record_batch->num_rows();
+            result.push_back(std::move(record_batch));
             return arrow::Status::OK();
           });
       !status.ok()) {
@@ -336,7 +353,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
         "Failed to run scanner on ", url, ": ", status.ToString()));
   }
 
-  return num_rows;
+  return result;
 }
 
 class QueryServiceImpl final : public seqr::QueryService::Service {
@@ -350,33 +367,95 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     const auto scanner_options = BuildScannerOptions(*request);
     if (!scanner_options.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                          std::string(scanner_options.status().message()));
+                          absl::StrCat("Failed to build scanner options: ",
+                                       scanner_options.status().message()));
     }
 
     const size_t num_arrow_urls = request->arrow_urls_size();
-    std::vector<absl::StatusOr<size_t>> results(num_arrow_urls);
+    std::vector<absl::StatusOr<arrow::RecordBatchVector>> partial_results(
+        num_arrow_urls);
+    std::atomic<size_t> num_rows = 0;  // Number of filtered rows across URLs.
     absl::BlockingCounter blocking_counter(num_arrow_urls);
     for (size_t i = 0; i < num_arrow_urls; ++i) {
-      thread_pool_.Schedule(
-          [&url_reader = url_reader_, &url = request->arrow_urls(i),
-           &result = results[i], &scanner_options, &blocking_counter] {
-            result = ProcessArrowUrl(url_reader, url, *scanner_options);
-            blocking_counter.DecrementCount();
-          });
+      thread_pool_.Schedule([&url_reader = url_reader_,
+                             &url = request->arrow_urls(i),
+                             &result = partial_results[i], &scanner_options,
+                             &num_rows, &blocking_counter] {
+        result = ProcessArrowUrl(url_reader, url, *scanner_options, &num_rows);
+        blocking_counter.DecrementCount();
+      });
     }
 
     blocking_counter.Wait();
 
-    size_t num_rows = 0;
-    for (const auto& result : results) {
+    if (num_rows == 0) {  // No results found.
+      return grpc::Status::OK;
+    }
+
+    if (num_rows > kMaxRows) {
+      return grpc::Status(grpc::StatusCode::CANCELLED,
+                          std::string(MaxRowsExceededError().message()));
+    }
+
+    std::shared_ptr<arrow::Schema> schema;
+    for (const auto& result : partial_results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      num_rows += *result;
+      for (const auto& record_batch : *result) {
+        schema = record_batch->schema();
+      }
+      if (schema != nullptr) {
+        break;
+      }
+    }
+    assert(schema != nullptr);
+
+    auto buffer_output_stream = arrow::io::BufferOutputStream::Create();
+    if (!buffer_output_stream.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to create buffer output stream: ",
+                       buffer_output_stream.status().message()));
+    }
+
+    auto stream_writer =
+        arrow::ipc::MakeStreamWriter(*buffer_output_stream, schema);
+    if (!stream_writer.ok()) {
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                          absl::StrCat("Failed to create stream writer: ",
+                                       stream_writer.status().message()));
+    }
+
+    for (const auto& result : partial_results) {
+      for (const auto& record_batch : *result) {
+        if (const auto status =
+                (*stream_writer)->WriteRecordBatch(*record_batch);
+            !status.ok()) {
+          return grpc::Status(
+              grpc::StatusCode::INVALID_ARGUMENT,
+              absl::StrCat("Failed to write record batch: ", status.message()));
+        }
+      }
+    }
+
+    if (const auto status = (*stream_writer)->Close(); !status.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to close stream writer: ", status.message()));
+    }
+
+    const auto buffer = (*buffer_output_stream)->Finish();
+    if (!buffer.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to finish buffer output stream: ",
+                       buffer.status().message()));
     }
 
     response->set_num_rows(num_rows);
+    response->set_record_batches((*buffer)->ToString());
 
     return grpc::Status::OK;
   }
