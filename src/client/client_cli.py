@@ -71,7 +71,7 @@ def main(query_text_proto_file, cloud_run_url):
 
     response = stub.Query(request)
 
-    print(f'number of rows: {response.num_rows}')
+    print(f'Number of rows: {response.num_rows} ({len(response.record_batches)}B)')
 
     start_time = time.time()
     buffer = pyarrow.py_buffer(response.record_batches)
