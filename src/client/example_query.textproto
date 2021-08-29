@@ -16,5 +16,7 @@ filter_expression {
     }
   }
 }
-sort_columns: "xpos"
+sort_keys: {
+    column: "xpos"
+}
 max_results: 100
