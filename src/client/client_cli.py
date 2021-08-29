@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import click
+import math
 import os
 import seqr_query_service_pb2
 import seqr_query_service_pb2_grpc
@@ -78,7 +79,7 @@ def main(query_text_proto_file, cloud_run_url):
     buffer = pyarrow.py_buffer(response.record_batches)
     table = pyarrow.ipc.RecordBatchFileReader(buffer).read_all()
     end_time = time.time()
-    print(f'Table deserialization took {end_time - start_time}s')
+    print(f'Table deserialization took {math.ceil(1000 * (end_time - start_time))}ms')
 
     assert table.num_rows == response.num_rows
 
