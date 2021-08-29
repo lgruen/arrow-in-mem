@@ -74,7 +74,7 @@ def main(query_text_proto_file, cloud_run_url):
     print(f'number of rows: {response.num_rows}')
 
     start_time = time.time()
-    buffer = pyarrow.Buffer(response.record_batches)
+    buffer = pyarrow.py_buffer(response.record_batches)
     table = pyarrow.ipc.RecordBatchFileReader(buffer).read_all()
     end_time = time.time()
     print(f'Table deserialization took {end_time - start_time}s')
