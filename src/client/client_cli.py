@@ -79,7 +79,7 @@ def main(query_text_proto_file, cloud_run_url):
     end_time = time.time()
     print(f'Table deserialization took {end_time - start_time}s')
 
-    assert table.num_rows() == response.num_rows()
+    assert table.num_rows() == response.num_rows
 
 
 if __name__ == '__main__':
