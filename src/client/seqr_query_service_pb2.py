@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\x93\x05\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12-\n\tsort_keys\x18\x04 \x03(\x0b\x32\x1a.seqr.QueryRequest.SortKey\x12\x12\n\nrows_limit\x18\x05 \x01(\x05\x12\x13\n\x0brows_offset\x18\x06 \x01(\x05\x12\x12\n\nnum_shards\x18\x07 \x01(\x05\x1a\xf8\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\x1a\x32\n\x07SortKey\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\t\x12\x17\n\x0fsort_descending\x18\x02 \x01(\x08\";\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x18\n\x10serialized_table\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\xfd\x05\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12-\n\tsort_keys\x18\x04 \x03(\x0b\x32\x1a.seqr.QueryRequest.SortKey\x12\x12\n\nrows_limit\x18\x05 \x01(\x05\x12\x13\n\x0brows_offset\x18\x06 \x01(\x05\x12<\n\x10sharding_options\x18\x07 \x01(\x0b\x32\".seqr.QueryRequest.ShardingOptions\x1a\xf8\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\x1a\x32\n\x07SortKey\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\t\x12\x17\n\x0fsort_descending\x18\x02 \x01(\x08\x1a>\n\x0fShardingOptions\x12\x12\n\nnum_shards\x18\x01 \x01(\x05\x12\x17\n\x0f\x62\x61\x63kend_address\x18\x02 \x01(\t\";\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x18\n\x10serialized_table\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -92,8 +92,8 @@ _QUERYREQUEST_EXPRESSION_LITERAL = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=409,
-  serialized_end=553,
+  serialized_start=451,
+  serialized_end=595,
 )
 
 _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
@@ -130,8 +130,8 @@ _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=555,
-  serialized_end=634,
+  serialized_start=597,
+  serialized_end=676,
 )
 
 _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
@@ -180,8 +180,8 @@ _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=266,
-  serialized_end=642,
+  serialized_start=308,
+  serialized_end=684,
 )
 
 _QUERYREQUEST_SORTKEY = _descriptor.Descriptor(
@@ -218,8 +218,46 @@ _QUERYREQUEST_SORTKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=644,
-  serialized_end=694,
+  serialized_start=686,
+  serialized_end=736,
+)
+
+_QUERYREQUEST_SHARDINGOPTIONS = _descriptor.Descriptor(
+  name='ShardingOptions',
+  full_name='seqr.QueryRequest.ShardingOptions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='num_shards', full_name='seqr.QueryRequest.ShardingOptions.num_shards', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='backend_address', full_name='seqr.QueryRequest.ShardingOptions.backend_address', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=738,
+  serialized_end=800,
 )
 
 _QUERYREQUEST = _descriptor.Descriptor(
@@ -273,16 +311,16 @@ _QUERYREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='num_shards', full_name='seqr.QueryRequest.num_shards', index=6,
-      number=7, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      name='sharding_options', full_name='seqr.QueryRequest.sharding_options', index=6,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
-  nested_types=[_QUERYREQUEST_EXPRESSION, _QUERYREQUEST_SORTKEY, ],
+  nested_types=[_QUERYREQUEST_EXPRESSION, _QUERYREQUEST_SORTKEY, _QUERYREQUEST_SHARDINGOPTIONS, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -292,7 +330,7 @@ _QUERYREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=35,
-  serialized_end=694,
+  serialized_end=800,
 )
 
 
@@ -330,8 +368,8 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=696,
-  serialized_end=755,
+  serialized_start=802,
+  serialized_end=861,
 )
 
 _QUERYREQUEST_EXPRESSION_LITERAL.containing_type = _QUERYREQUEST_EXPRESSION
@@ -368,8 +406,10 @@ _QUERYREQUEST_EXPRESSION.oneofs_by_name['type'].fields.append(
   _QUERYREQUEST_EXPRESSION.fields_by_name['call'])
 _QUERYREQUEST_EXPRESSION.fields_by_name['call'].containing_oneof = _QUERYREQUEST_EXPRESSION.oneofs_by_name['type']
 _QUERYREQUEST_SORTKEY.containing_type = _QUERYREQUEST
+_QUERYREQUEST_SHARDINGOPTIONS.containing_type = _QUERYREQUEST
 _QUERYREQUEST.fields_by_name['filter_expression'].message_type = _QUERYREQUEST_EXPRESSION
 _QUERYREQUEST.fields_by_name['sort_keys'].message_type = _QUERYREQUEST_SORTKEY
+_QUERYREQUEST.fields_by_name['sharding_options'].message_type = _QUERYREQUEST_SHARDINGOPTIONS
 DESCRIPTOR.message_types_by_name['QueryRequest'] = _QUERYREQUEST
 DESCRIPTOR.message_types_by_name['QueryResponse'] = _QUERYRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -403,6 +443,13 @@ QueryRequest = _reflection.GeneratedProtocolMessageType('QueryRequest', (_messag
     # @@protoc_insertion_point(class_scope:seqr.QueryRequest.SortKey)
     })
   ,
+
+  'ShardingOptions' : _reflection.GeneratedProtocolMessageType('ShardingOptions', (_message.Message,), {
+    'DESCRIPTOR' : _QUERYREQUEST_SHARDINGOPTIONS,
+    '__module__' : 'seqr_query_service_pb2'
+    # @@protoc_insertion_point(class_scope:seqr.QueryRequest.ShardingOptions)
+    })
+  ,
   'DESCRIPTOR' : _QUERYREQUEST,
   '__module__' : 'seqr_query_service_pb2'
   # @@protoc_insertion_point(class_scope:seqr.QueryRequest)
@@ -412,6 +459,7 @@ _sym_db.RegisterMessage(QueryRequest.Expression)
 _sym_db.RegisterMessage(QueryRequest.Expression.Literal)
 _sym_db.RegisterMessage(QueryRequest.Expression.Call)
 _sym_db.RegisterMessage(QueryRequest.SortKey)
+_sym_db.RegisterMessage(QueryRequest.ShardingOptions)
 
 QueryResponse = _reflection.GeneratedProtocolMessageType('QueryResponse', (_message.Message,), {
   'DESCRIPTOR' : _QUERYRESPONSE,
@@ -429,8 +477,8 @@ _QUERYSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=757,
-  serialized_end=823,
+  serialized_start=863,
+  serialized_end=929,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',

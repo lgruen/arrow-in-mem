@@ -63,8 +63,16 @@ message QueryRequest {
   // The index of the first row to return ("OFFSET" in SQL).
   int32 rows_offset = 6;
 
-  // The number of shards to use to process this query.
-  int32 num_shards = 7;
+  message ShardingOptions {
+    // The number of shards to use to process this query.
+    int32 num_shards = 1;
+
+    // The load balancer to use for sending queries to workers
+    // (e.g. a Cloud Run URL, including "https://").
+    string backend_address = 2;
+  }
+
+  ShardingOptions sharding_options = 7;
 }
 
 message QueryResponse {
