@@ -72,7 +72,7 @@ def main(query_text_proto_file, cloud_run_url):
     response = stub.Query(request)
 
     print(f'Number of rows: {response.num_rows}')
-    print(f'Serialized size: {len(response.record_batches)}')
+    print(f'Serialized size: {len(response.record_batches)} bytes')
 
     start_time = time.time()
     buffer = pyarrow.py_buffer(response.record_batches)
