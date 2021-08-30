@@ -13,6 +13,7 @@
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
 #include <arrow/ipc/writer.h>
+#include <arrow/table.h>
 #include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -366,6 +367,7 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   grpc::Status Query(grpc::ServerContext* const context,
                      const seqr::QueryRequest* const request,
                      seqr::QueryResponse* const response) override {
+    // Build options that are shared between worker threads.
     const auto scanner_options = BuildScannerOptions(*request);
     if (!scanner_options.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
@@ -373,6 +375,7 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
                                        scanner_options.status().message()));
     }
 
+    // Process the URLs in parallel.
     const size_t num_arrow_urls = request->arrow_urls_size();
     std::vector<absl::StatusOr<arrow::RecordBatchVector>> partial_results(
         num_arrow_urls);
@@ -399,21 +402,32 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
                           std::string(MaxRowsExceededError().message()));
     }
 
-    std::shared_ptr<arrow::Schema> schema;
+    // Assemble the partial results into a table.
+    size_t num_record_batches = 0;
     for (const auto& result : partial_results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      for (const auto& record_batch : *result) {
-        schema = record_batch->schema();
-      }
-      if (schema != nullptr) {
-        break;
+      num_record_batches += result->size();
+    }
+
+    arrow::RecordBatchVector record_batches;
+    record_batches.reserve(num_record_batches);
+    for (auto& result : partial_results) {
+      for (auto& record_batch : *result) {
+        record_batches.push_back(std::move(record_batch));
       }
     }
-    assert(schema != nullptr);
 
+    const auto table = arrow::Table::FromRecordBatches(record_batches);
+    if (!table.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to create table: ", table.status().message()));
+    }
+
+    // Serialize the table to the response protobuf.
     auto buffer_output_stream = arrow::io::BufferOutputStream::Create();
     if (!buffer_output_stream.ok()) {
       return grpc::Status(
@@ -423,22 +437,17 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     }
 
     auto file_writer =
-        arrow::ipc::MakeFileWriter(*buffer_output_stream, schema);
+        arrow::ipc::MakeFileWriter(*buffer_output_stream, (*table)->schema());
     if (!file_writer.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                           absl::StrCat("Failed to create file writer: ",
                                        file_writer.status().message()));
     }
 
-    for (const auto& result : partial_results) {
-      for (const auto& record_batch : *result) {
-        if (const auto status = (*file_writer)->WriteRecordBatch(*record_batch);
-            !status.ok()) {
-          return grpc::Status(
-              grpc::StatusCode::INVALID_ARGUMENT,
-              absl::StrCat("Failed to write record batch: ", status.message()));
-        }
-      }
+    if (const auto status = (*file_writer)->WriteTable(**table); !status.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to write table: ", status.message()));
     }
 
     if (const auto status = (*file_writer)->Close(); !status.ok()) {
