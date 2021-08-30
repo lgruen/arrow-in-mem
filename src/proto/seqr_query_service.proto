@@ -49,30 +49,8 @@ message QueryRequest {
   // The expression to filter by ("WHERE" in SQL).
   Expression filter_expression = 3;
 
-  message SortKey {
-    string column = 1;        // Reference to a column by name.
-    bool sort_descending = 2; // Sort order ("ASC" / "DESC" in SQL).
-  }
-
-  // How to sort the rows ("ORDER BY" in SQL).
-  repeated SortKey sort_keys = 4;
-
-  // The maximum number of rows to return ("LIMIT" in SQL).
-  int32 rows_limit = 5;
-
-  // The index of the first row to return ("OFFSET" in SQL).
-  int32 rows_offset = 6;
-
-  message ShardingOptions {
-    // The number of shards to use to process this query.
-    int32 num_shards = 1;
-
-    // The load balancer to use for sending queries to workers
-    // (e.g. a Cloud Run URL, including "https://").
-    string backend_address = 2;
-  }
-
-  ShardingOptions sharding_options = 7;
+  // Cancel the request if the number of result rows exceeds this value.
+  int32 max_rows = 4;
 }
 
 message QueryResponse {

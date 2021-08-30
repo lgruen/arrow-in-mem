@@ -16,7 +16,4 @@ filter_expression {
     }
   }
 }
-sort_keys: {
-    column: "xpos"
-}
-rows_limit: 100
+max_rows: 10000

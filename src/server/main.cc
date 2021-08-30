@@ -1,5 +1,4 @@
 #include <absl/base/thread_annotations.h>
-#include <absl/container/flat_hash_set.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/strip.h>
@@ -13,7 +12,6 @@
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
 #include <arrow/ipc/writer.h>
-#include <arrow/table.h>
 #include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -35,12 +33,9 @@ namespace {
 
 constexpr size_t kNumThreadPoolWorkers = 32;
 
-// Abort query if the number of result rows exceeds this value.
-constexpr size_t kMaxRows = 10000;
-
-absl::Status MaxRowsExceededError() {
+absl::Status MaxRowsExceededError(const size_t max_rows) {
   return absl::CancelledError(
-      absl::StrCat("More than ", kMaxRows,
+      absl::StrCat("More than ", max_rows,
                    " rows matched; please use a more restrictive search"));
 }
 
@@ -237,6 +232,7 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
 struct ScannerOptions {
   std::vector<std::string> projection_columns;
   arrow::compute::Expression filter_expression;
+  size_t max_rows = 0;
 };
 
 absl::StatusOr<ScannerOptions> BuildScannerOptions(
@@ -246,17 +242,15 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
     return filter_expression.status();
   }
 
-  absl::flat_hash_set<std::string> projection_columns;
-  for (const auto& projection_column : request.projection_columns()) {
-    projection_columns.insert(projection_column);
+  if (request.max_rows() <= 0) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid max_rows value of ", request.max_rows()));
   }
 
-  for (const auto& sort_key : request.sort_keys()) {
-    projection_columns.insert(sort_key.column());
-  }
-
-  return ScannerOptions{{projection_columns.begin(), projection_columns.end()},
-                        *std::move(filter_expression)};
+  return ScannerOptions{{request.projection_columns().begin(),
+                         request.projection_columns().end()},
+                        *std::move(filter_expression),
+                        static_cast<size_t>(request.max_rows())};
 }
 
 absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
@@ -264,8 +258,8 @@ absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
     const ScannerOptions& scanner_options,
     std::atomic<size_t>* const num_rows) {
   // Early cancellation.
-  if (*num_rows > kMaxRows) {
-    return MaxRowsExceededError();
+  if (*num_rows > scanner_options.max_rows) {
+    return MaxRowsExceededError(scanner_options.max_rows);
   }
 
   const auto data = url_reader.Read(url);
@@ -291,8 +285,8 @@ absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
 
   const int num_record_batches =
       (*record_batch_file_reader)->num_record_batches();
-  arrow::RecordBatchVector record_batch_vector;
-  record_batch_vector.reserve(num_record_batches);
+  arrow::RecordBatchVector record_batches;
+  record_batches.reserve(num_record_batches);
   for (int i = 0; i < num_record_batches; ++i) {
     auto record_batch = (*record_batch_file_reader)->ReadRecordBatch(i);
     if (!record_batch.ok()) {
@@ -300,11 +294,11 @@ absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
           absl::StrCat("Failed to read record batch ", i, " for ", url, ": ",
                        record_batch.status().ToString()));
     }
-    record_batch_vector.push_back(std::move(*record_batch));
+    record_batches.push_back(std::move(*record_batch));
   }
 
   auto in_memory_dataset = std::make_shared<arrow::dataset::InMemoryDataset>(
-      schema, std::move(record_batch_vector));
+      schema, std::move(record_batches));
   auto scanner_builder = in_memory_dataset->NewScan();
   if (!scanner_builder.ok()) {
     return absl::InvalidArgumentError(
@@ -397,37 +391,29 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
       return grpc::Status::OK;
     }
 
-    if (num_rows > kMaxRows) {
-      return grpc::Status(grpc::StatusCode::CANCELLED,
-                          std::string(MaxRowsExceededError().message()));
+    if (num_rows > scanner_options->max_rows) {
+      return grpc::Status(
+          grpc::StatusCode::CANCELLED,
+          std::string(
+              MaxRowsExceededError(scanner_options->max_rows).message()));
     }
 
-    // Assemble the partial results into a table.
-    size_t num_record_batches = 0;
+    // Serialize the result record batches to the response proto.
+    std::shared_ptr<arrow::Schema> schema;
     for (const auto& result : partial_results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      num_record_batches += result->size();
-    }
-
-    arrow::RecordBatchVector record_batches;
-    record_batches.reserve(num_record_batches);
-    for (auto& result : partial_results) {
-      for (auto& record_batch : *result) {
-        record_batches.push_back(std::move(record_batch));
+      for (const auto& record_batch : *result) {
+        schema = record_batch->schema();
+      }
+      if (schema != nullptr) {
+        break;
       }
     }
+    assert(schema != nullptr);
 
-    const auto table = arrow::Table::FromRecordBatches(record_batches);
-    if (!table.ok()) {
-      return grpc::Status(
-          grpc::StatusCode::INVALID_ARGUMENT,
-          absl::StrCat("Failed to create table: ", table.status().message()));
-    }
-
-    // Serialize the table to the response protobuf.
     auto buffer_output_stream = arrow::io::BufferOutputStream::Create();
     if (!buffer_output_stream.ok()) {
       return grpc::Status(
@@ -437,17 +423,22 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     }
 
     auto file_writer =
-        arrow::ipc::MakeFileWriter(*buffer_output_stream, (*table)->schema());
+        arrow::ipc::MakeFileWriter(*buffer_output_stream, schema);
     if (!file_writer.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                           absl::StrCat("Failed to create file writer: ",
                                        file_writer.status().message()));
     }
 
-    if (const auto status = (*file_writer)->WriteTable(**table); !status.ok()) {
-      return grpc::Status(
-          grpc::StatusCode::INVALID_ARGUMENT,
-          absl::StrCat("Failed to write table: ", status.message()));
+    for (const auto& result : partial_results) {
+      for (const auto& record_batch : *result) {
+        if (const auto status = (*file_writer)->WriteRecordBatch(*record_batch);
+            !status.ok()) {
+          return grpc::Status(
+              grpc::StatusCode::INVALID_ARGUMENT,
+              absl::StrCat("Failed to write record batch: ", status.message()));
+        }
+      }
     }
 
     if (const auto status = (*file_writer)->Close(); !status.ok()) {
