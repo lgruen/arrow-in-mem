@@ -5,6 +5,7 @@
 #include <absl/synchronization/blocking_counter.h>
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
+#include <arrow/array/builder_binary.h>
 #include <arrow/compute/exec.h>
 #include <arrow/dataset/dataset.h>
 #include <arrow/dataset/scanner.h>
@@ -198,18 +199,33 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
       switch (literal.type_case()) {
         case seqr::QueryRequest::Expression::Literal::TYPE_NOT_SET:
           return absl::InvalidArgumentError("Literal type not set");
-        case seqr::QueryRequest::Expression::Literal::kBoolVal:
-          return cp::literal(literal.bool_val());
-        case seqr::QueryRequest::Expression::Literal::kInt32Val:
-          return cp::literal(literal.int32_val());
-        case seqr::QueryRequest::Expression::Literal::kInt64Val:
-          return cp::literal(literal.int64_val());
-        case seqr::QueryRequest::Expression::Literal::kFloatVal:
-          return cp::literal(literal.float_val());
-        case seqr::QueryRequest::Expression::Literal::kDoubleVal:
-          return cp::literal(literal.double_val());
-        case seqr::QueryRequest::Expression::Literal::kStringVal:
-          return cp::literal(literal.string_val());
+        case seqr::QueryRequest::Expression::Literal::kBoolValue:
+          return cp::literal(literal.bool_value());
+        case seqr::QueryRequest::Expression::Literal::kInt32Value:
+          return cp::literal(literal.int32_value());
+        case seqr::QueryRequest::Expression::Literal::kInt64Value:
+          return cp::literal(literal.int64_value());
+        case seqr::QueryRequest::Expression::Literal::kFloatValue:
+          return cp::literal(literal.float_value());
+        case seqr::QueryRequest::Expression::Literal::kDoubleValue:
+          return cp::literal(literal.double_value());
+        case seqr::QueryRequest::Expression::Literal::kStringValue:
+          return cp::literal(literal.string_value());
+        case seqr::QueryRequest::Expression::Literal::kStringList: {
+          arrow::StringBuilder builder;
+          for (const auto& str : literal.string_list().string_value()) {
+            if (const auto status = builder.Append(str); !status.ok()) {
+              return absl::InvalidArgumentError(absl::StrCat(
+                  "Failed to append string value: ", status.message()));
+            }
+          }
+          std::shared_ptr<arrow::Array> array;
+          if (const auto status = builder.Finish(&array); !status.ok()) {
+            return absl::InvalidArgumentError(absl::StrCat(
+                "Failed to build string array: ", status.message()));
+          }
+          return cp::literal(array);
+        }
       }
     }
 
