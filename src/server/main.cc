@@ -6,7 +6,6 @@
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
 #include <arrow/array/builder_binary.h>
-#include <arrow/compute/exec.h>
 #include <arrow/dataset/dataset.h>
 #include <arrow/dataset/scanner.h>
 #include <arrow/io/memory.h>
@@ -29,7 +28,9 @@
 #include <vector>
 
 #include "seqr_query_service.grpc.pb.h"
+#include "string_list_contains_any.h"
 
+namespace seqr {
 namespace {
 
 constexpr size_t kNumThreadPoolWorkers = 32;
@@ -481,6 +482,14 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   const UrlReader& url_reader_;
 };
 
+absl::Status RegisterArrowComputeFunctions() {
+  if (const auto status = RegisterStringListContainsAny(); !status.ok()) {
+    return absl::InternalError(absl::StrCat(
+        "Error calling RegisterStringListContainsAny: ", status.message()));
+  }
+  return absl::OkStatus();
+}
+
 void RunServer(const int port) {
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -498,6 +507,7 @@ void RunServer(const int port) {
 }
 
 }  // namespace
+}  // namespace seqr
 
 int main(int argc, char** argv) {
   // Get the port number from the environment.
@@ -513,7 +523,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  RunServer(port);
+  if (const auto status = seqr::RegisterArrowComputeFunctions(); !status.ok()) {
+    std::cerr << status << std::endl;
+    return 1;
+  }
+
+  seqr::RunServer(port);
 
   return 0;
 }
