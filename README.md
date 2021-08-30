@@ -36,7 +36,7 @@ cd src/client
 
 pip3 install -r requirements.txt
 
-./client.py --request_text_proto_file=example_query.textproto
+./client_cli.py --request_text_proto_file=example_query.textproto
 ```
 
 ### Debug build
@@ -72,7 +72,7 @@ CLOUD_RUN_URL=$(gcloud run services describe seqr-query-backend --platform manag
 
 cd src/client
 
-./client.py --request_text_proto_file=example_query.textproto --cloud_run_url=$CLOUD_RUN_URL
+./client_cli.py --request_text_proto_file=example_query.textproto --cloud_run_url=$CLOUD_RUN_URL
 ```
 
 For gRPC debugging, the following environment variables are helpful:

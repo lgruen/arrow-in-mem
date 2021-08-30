@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
 import click
+import math
 import os
 import seqr_query_service_pb2
 import seqr_query_service_pb2_grpc
+import time
+import pyarrow
 
 
 def _remove_prefix(s: str, prefix: str) -> str:
@@ -69,7 +72,16 @@ def main(query_text_proto_file, cloud_run_url):
 
     response = stub.Query(request)
 
-    print(f'number of results: {response.num_results}')
+    print(f'Number of rows: {response.num_rows}')
+    print(f'Serialized size: {len(response.record_batches)} bytes')
+
+    start_time = time.time()
+    buffer = pyarrow.py_buffer(response.record_batches)
+    table = pyarrow.ipc.RecordBatchFileReader(buffer).read_all()
+    end_time = time.time()
+    print(f'Table deserialization took {math.ceil(1000 * (end_time - start_time))}ms')
+
+    assert table.num_rows == response.num_rows
 
 
 if __name__ == '__main__':

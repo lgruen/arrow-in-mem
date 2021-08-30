@@ -12,6 +12,8 @@
 #include <arrow/io/memory.h>
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
+#include <arrow/ipc/writer.h>
+#include <arrow/table.h>
 #include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
@@ -32,6 +34,15 @@
 namespace {
 
 constexpr size_t kNumThreadPoolWorkers = 32;
+
+// Abort query if the number of result rows exceeds this value.
+constexpr size_t kMaxRows = 10000;
+
+absl::Status MaxRowsExceededError() {
+  return absl::CancelledError(
+      absl::StrCat("More than ", kMaxRows,
+                   " rows matched; please use a more restrictive search"));
+}
 
 // Adapted from the Abseil thread pool.
 class ThreadPool {
@@ -178,33 +189,36 @@ class GcsReader : public UrlReader {
 
 // Returns an Arrow compute expression from the protobuf specification.
 absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
-    const seqr::Expression& filter_expression) {
+    const seqr::QueryRequest::Expression& filter_expression) {
   namespace cp = arrow::compute;
   switch (filter_expression.type_case()) {
-    case seqr::Expression::TYPE_NOT_SET:
+    case seqr::QueryRequest::Expression::TYPE_NOT_SET:
       return absl::InvalidArgumentError("Expression type not set");
-    case seqr::Expression::kColumn:
+
+    case seqr::QueryRequest::Expression::kColumn:
       return cp::field_ref(filter_expression.column());
-    case seqr::Expression::kLiteral: {
+
+    case seqr::QueryRequest::Expression::kLiteral: {
       const auto& literal = filter_expression.literal();
       switch (literal.type_case()) {
-        case seqr::Expression::Literal::TYPE_NOT_SET:
+        case seqr::QueryRequest::Expression::Literal::TYPE_NOT_SET:
           return absl::InvalidArgumentError("Literal type not set");
-        case seqr::Expression::Literal::kBoolVal:
+        case seqr::QueryRequest::Expression::Literal::kBoolVal:
           return cp::literal(literal.bool_val());
-        case seqr::Expression::Literal::kInt32Val:
+        case seqr::QueryRequest::Expression::Literal::kInt32Val:
           return cp::literal(literal.int32_val());
-        case seqr::Expression::Literal::kInt64Val:
+        case seqr::QueryRequest::Expression::Literal::kInt64Val:
           return cp::literal(literal.int64_val());
-        case seqr::Expression::Literal::kFloatVal:
+        case seqr::QueryRequest::Expression::Literal::kFloatVal:
           return cp::literal(literal.float_val());
-        case seqr::Expression::Literal::kDoubleVal:
+        case seqr::QueryRequest::Expression::Literal::kDoubleVal:
           return cp::literal(literal.double_val());
-        case seqr::Expression::Literal::kStringVal:
+        case seqr::QueryRequest::Expression::Literal::kStringVal:
           return cp::literal(literal.string_val());
       }
     }
-    case seqr::Expression::kCall: {
+
+    case seqr::QueryRequest::Expression::kCall: {
       const auto& call = filter_expression.call();
       std::vector<cp::Expression> arguments;
       arguments.reserve(call.arguments_size());
@@ -237,17 +251,23 @@ absl::StatusOr<ScannerOptions> BuildScannerOptions(
     projection_columns.insert(projection_column);
   }
 
-  for (const auto& sort_column : request.sort_columns()) {
-    projection_columns.insert(sort_column);
+  for (const auto& sort_key : request.sort_keys()) {
+    projection_columns.insert(sort_key.column());
   }
 
   return ScannerOptions{{projection_columns.begin(), projection_columns.end()},
                         *std::move(filter_expression)};
 }
 
-absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
-                                       const std::string_view url,
-                                       const ScannerOptions& scanner_options) {
+absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
+    const UrlReader& url_reader, const std::string_view url,
+    const ScannerOptions& scanner_options,
+    std::atomic<size_t>* const num_rows) {
+  // Early cancellation.
+  if (*num_rows > kMaxRows) {
+    return MaxRowsExceededError();
+  }
+
   const auto data = url_reader.Read(url);
   if (!data.ok()) {
     return absl::InvalidArgumentError(
@@ -320,12 +340,15 @@ absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
                      scanner.status().ToString()));
   }
 
-  size_t num_rows = 0;  // Count after filtering.
+  arrow::RecordBatchVector result;
   if (const auto status = (*scanner)->Scan(
-          [&num_rows](
-              const arrow::dataset::TaggedRecordBatch tagged_record_batch) {
-            const auto record_batch = tagged_record_batch.record_batch;
-            num_rows += record_batch->num_rows();
+          [&result,
+           num_rows](arrow::dataset::TaggedRecordBatch tagged_record_batch) {
+            auto& record_batch = tagged_record_batch.record_batch;
+            if (record_batch->num_rows() > 0) {
+              *num_rows += record_batch->num_rows();
+              result.push_back(std::move(record_batch));
+            }
             return arrow::Status::OK();
           });
       !status.ok()) {
@@ -333,7 +356,7 @@ absl::StatusOr<size_t> ProcessArrowUrl(const UrlReader& url_reader,
         "Failed to run scanner on ", url, ": ", status.ToString()));
   }
 
-  return num_rows;
+  return result;
 }
 
 class QueryServiceImpl final : public seqr::QueryService::Service {
@@ -344,36 +367,105 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   grpc::Status Query(grpc::ServerContext* const context,
                      const seqr::QueryRequest* const request,
                      seqr::QueryResponse* const response) override {
+    // Build options that are shared between worker threads.
     const auto scanner_options = BuildScannerOptions(*request);
     if (!scanner_options.ok()) {
       return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                          std::string(scanner_options.status().message()));
+                          absl::StrCat("Failed to build scanner options: ",
+                                       scanner_options.status().message()));
     }
 
+    // Process the URLs in parallel.
     const size_t num_arrow_urls = request->arrow_urls_size();
-    std::vector<absl::StatusOr<size_t>> results(num_arrow_urls);
+    std::vector<absl::StatusOr<arrow::RecordBatchVector>> partial_results(
+        num_arrow_urls);
+    std::atomic<size_t> num_rows = 0;  // Number of filtered rows across URLs.
     absl::BlockingCounter blocking_counter(num_arrow_urls);
     for (size_t i = 0; i < num_arrow_urls; ++i) {
-      thread_pool_.Schedule(
-          [&url_reader = url_reader_, &url = request->arrow_urls(i),
-           &result = results[i], &scanner_options, &blocking_counter] {
-            result = ProcessArrowUrl(url_reader, url, *scanner_options);
-            blocking_counter.DecrementCount();
-          });
+      thread_pool_.Schedule([&url_reader = url_reader_,
+                             &url = request->arrow_urls(i),
+                             &result = partial_results[i], &scanner_options,
+                             &num_rows, &blocking_counter] {
+        result = ProcessArrowUrl(url_reader, url, *scanner_options, &num_rows);
+        blocking_counter.DecrementCount();
+      });
     }
 
     blocking_counter.Wait();
 
-    size_t num_results = 0;
-    for (const auto& result : results) {
+    if (num_rows == 0) {  // No results found.
+      return grpc::Status::OK;
+    }
+
+    if (num_rows > kMaxRows) {
+      return grpc::Status(grpc::StatusCode::CANCELLED,
+                          std::string(MaxRowsExceededError().message()));
+    }
+
+    // Assemble the partial results into a table.
+    size_t num_record_batches = 0;
+    for (const auto& result : partial_results) {
       if (!result.ok()) {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      num_results += *result;
+      num_record_batches += result->size();
     }
 
-    response->set_num_results(num_results);
+    arrow::RecordBatchVector record_batches;
+    record_batches.reserve(num_record_batches);
+    for (auto& result : partial_results) {
+      for (auto& record_batch : *result) {
+        record_batches.push_back(std::move(record_batch));
+      }
+    }
+
+    const auto table = arrow::Table::FromRecordBatches(record_batches);
+    if (!table.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to create table: ", table.status().message()));
+    }
+
+    // Serialize the table to the response protobuf.
+    auto buffer_output_stream = arrow::io::BufferOutputStream::Create();
+    if (!buffer_output_stream.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to create buffer output stream: ",
+                       buffer_output_stream.status().message()));
+    }
+
+    auto file_writer =
+        arrow::ipc::MakeFileWriter(*buffer_output_stream, (*table)->schema());
+    if (!file_writer.ok()) {
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                          absl::StrCat("Failed to create file writer: ",
+                                       file_writer.status().message()));
+    }
+
+    if (const auto status = (*file_writer)->WriteTable(**table); !status.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to write table: ", status.message()));
+    }
+
+    if (const auto status = (*file_writer)->Close(); !status.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to close file writer: ", status.message()));
+    }
+
+    const auto buffer = (*buffer_output_stream)->Finish();
+    if (!buffer.ok()) {
+      return grpc::Status(
+          grpc::StatusCode::INVALID_ARGUMENT,
+          absl::StrCat("Failed to finish buffer output stream: ",
+                       buffer.status().message()));
+    }
+
+    response->set_num_rows(num_rows);
+    response->set_record_batches((*buffer)->ToString());
 
     return grpc::Status::OK;
   }
