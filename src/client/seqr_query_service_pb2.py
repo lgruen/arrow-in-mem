@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\xf3\x03\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x1a\xf8\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\"9\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x16\n\x0erecord_batches\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\x85\x04\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12\x10\n\x08max_rows\x18\x04 \x01(\x05\x1a\xf8\x02\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x90\x01\n\x07Literal\x12\x12\n\x08\x62ool_val\x18\x01 \x01(\x08H\x00\x12\x13\n\tint32_val\x18\x02 \x01(\x05H\x00\x12\x13\n\tint64_val\x18\x03 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x12\x14\n\ndouble_val\x18\x05 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\"9\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x16\n\x0erecord_batches\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -92,8 +92,8 @@ _QUERYREQUEST_EXPRESSION_LITERAL = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=301,
-  serialized_end=445,
+  serialized_start=319,
+  serialized_end=463,
 )
 
 _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
@@ -130,8 +130,8 @@ _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=447,
-  serialized_end=526,
+  serialized_start=465,
+  serialized_end=544,
 )
 
 _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
@@ -180,8 +180,8 @@ _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=158,
-  serialized_end=534,
+  serialized_start=176,
+  serialized_end=552,
 )
 
 _QUERYREQUEST = _descriptor.Descriptor(
@@ -213,6 +213,13 @@ _QUERYREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='max_rows', full_name='seqr.QueryRequest.max_rows', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -226,7 +233,7 @@ _QUERYREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=35,
-  serialized_end=534,
+  serialized_end=552,
 )
 
 
@@ -264,8 +271,8 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=536,
-  serialized_end=593,
+  serialized_start=554,
+  serialized_end=611,
 )
 
 _QUERYREQUEST_EXPRESSION_LITERAL.containing_type = _QUERYREQUEST_EXPRESSION
@@ -353,8 +360,8 @@ _QUERYSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=595,
-  serialized_end=661,
+  serialized_start=613,
+  serialized_end=679,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',
