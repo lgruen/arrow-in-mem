@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\xf6\x04\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12\x10\n\x08max_rows\x18\x04 \x01(\x05\x1a\xe9\x03\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\xdd\x01\n\x07Literal\x12\x14\n\nbool_value\x18\x01 \x01(\x08H\x00\x12\x15\n\x0bint32_value\x18\x02 \x01(\x05H\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x15\n\x0b\x66loat_value\x18\x04 \x01(\x02H\x00\x12\x16\n\x0c\x64ouble_value\x18\x05 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x06 \x01(\tH\x00\x12?\n\x0bstring_list\x18\x07 \x01(\x0b\x32(.seqr.QueryRequest.Expression.StringListH\x00\x42\x06\n\x04type\x1a\"\n\nStringList\x12\x14\n\x0cstring_value\x18\x01 \x03(\t\x1aO\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.ExpressionB\x06\n\x04type\"9\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x16\n\x0erecord_batches\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x18seqr_query_service.proto\x12\x04seqr\"\x8f\x05\n\x0cQueryRequest\x12\x12\n\narrow_urls\x18\x01 \x03(\t\x12\x1a\n\x12projection_columns\x18\x02 \x03(\t\x12\x38\n\x11\x66ilter_expression\x18\x03 \x01(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12\x10\n\x08max_rows\x18\x04 \x01(\x05\x1a\x82\x04\n\nExpression\x12\x10\n\x06\x63olumn\x18\x01 \x01(\tH\x00\x12\x38\n\x07literal\x18\x02 \x01(\x0b\x32%.seqr.QueryRequest.Expression.LiteralH\x00\x12\x32\n\x04\x63\x61ll\x18\x03 \x01(\x0b\x32\".seqr.QueryRequest.Expression.CallH\x00\x1a\x9c\x01\n\x07Literal\x12\x14\n\nbool_value\x18\x01 \x01(\x08H\x00\x12\x15\n\x0bint32_value\x18\x02 \x01(\x05H\x00\x12\x15\n\x0bint64_value\x18\x03 \x01(\x03H\x00\x12\x15\n\x0b\x66loat_value\x18\x04 \x01(\x02H\x00\x12\x16\n\x0c\x64ouble_value\x18\x05 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x06 \x01(\tH\x00\x42\x06\n\x04type\x1a\xa8\x01\n\x04\x43\x61ll\x12\x15\n\rfunction_name\x18\x01 \x01(\t\x12\x30\n\targuments\x18\x02 \x03(\x0b\x32\x1d.seqr.QueryRequest.Expression\x12L\n\x12set_lookup_options\x18\x03 \x01(\x0b\x32..seqr.QueryRequest.Expression.SetLookupOptionsH\x00\x42\t\n\x07options\x1a\"\n\x10SetLookupOptions\x12\x0e\n\x06values\x18\x01 \x03(\tB\x06\n\x04type\"9\n\rQueryResponse\x12\x10\n\x08num_rows\x18\x01 \x01(\x05\x12\x16\n\x0erecord_batches\x18\x02 \x01(\x0c\x32\x42\n\x0cQueryService\x12\x32\n\x05Query\x12\x12.seqr.QueryRequest\x1a\x13.seqr.QueryResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -75,13 +75,6 @@ _QUERYREQUEST_EXPRESSION_LITERAL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='string_list', full_name='seqr.QueryRequest.Expression.Literal.string_list', index=6,
-      number=7, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -100,38 +93,7 @@ _QUERYREQUEST_EXPRESSION_LITERAL = _descriptor.Descriptor(
     fields=[]),
   ],
   serialized_start=319,
-  serialized_end=540,
-)
-
-_QUERYREQUEST_EXPRESSION_STRINGLIST = _descriptor.Descriptor(
-  name='StringList',
-  full_name='seqr.QueryRequest.Expression.StringList',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='string_value', full_name='seqr.QueryRequest.Expression.StringList.string_value', index=0,
-      number=1, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=542,
-  serialized_end=576,
+  serialized_end=475,
 )
 
 _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
@@ -156,6 +118,49 @@ _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='set_lookup_options', full_name='seqr.QueryRequest.Expression.Call.set_lookup_options', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='options', full_name='seqr.QueryRequest.Expression.Call.options',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+  ],
+  serialized_start=478,
+  serialized_end=646,
+)
+
+_QUERYREQUEST_EXPRESSION_SETLOOKUPOPTIONS = _descriptor.Descriptor(
+  name='SetLookupOptions',
+  full_name='seqr.QueryRequest.Expression.SetLookupOptions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='values', full_name='seqr.QueryRequest.Expression.SetLookupOptions.values', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -168,8 +173,8 @@ _QUERYREQUEST_EXPRESSION_CALL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=578,
-  serialized_end=657,
+  serialized_start=648,
+  serialized_end=682,
 )
 
 _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
@@ -204,7 +209,7 @@ _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_QUERYREQUEST_EXPRESSION_LITERAL, _QUERYREQUEST_EXPRESSION_STRINGLIST, _QUERYREQUEST_EXPRESSION_CALL, ],
+  nested_types=[_QUERYREQUEST_EXPRESSION_LITERAL, _QUERYREQUEST_EXPRESSION_CALL, _QUERYREQUEST_EXPRESSION_SETLOOKUPOPTIONS, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -219,7 +224,7 @@ _QUERYREQUEST_EXPRESSION = _descriptor.Descriptor(
     fields=[]),
   ],
   serialized_start=176,
-  serialized_end=665,
+  serialized_end=690,
 )
 
 _QUERYREQUEST = _descriptor.Descriptor(
@@ -271,7 +276,7 @@ _QUERYREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=35,
-  serialized_end=665,
+  serialized_end=690,
 )
 
 
@@ -309,11 +314,10 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=667,
-  serialized_end=724,
+  serialized_start=692,
+  serialized_end=749,
 )
 
-_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_list'].message_type = _QUERYREQUEST_EXPRESSION_STRINGLIST
 _QUERYREQUEST_EXPRESSION_LITERAL.containing_type = _QUERYREQUEST_EXPRESSION
 _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
   _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['bool_value'])
@@ -333,12 +337,13 @@ _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['double_value'].containing_oneof
 _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
   _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_value'])
 _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_value'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
-_QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type'].fields.append(
-  _QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_list'])
-_QUERYREQUEST_EXPRESSION_LITERAL.fields_by_name['string_list'].containing_oneof = _QUERYREQUEST_EXPRESSION_LITERAL.oneofs_by_name['type']
-_QUERYREQUEST_EXPRESSION_STRINGLIST.containing_type = _QUERYREQUEST_EXPRESSION
 _QUERYREQUEST_EXPRESSION_CALL.fields_by_name['arguments'].message_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST_EXPRESSION_CALL.fields_by_name['set_lookup_options'].message_type = _QUERYREQUEST_EXPRESSION_SETLOOKUPOPTIONS
 _QUERYREQUEST_EXPRESSION_CALL.containing_type = _QUERYREQUEST_EXPRESSION
+_QUERYREQUEST_EXPRESSION_CALL.oneofs_by_name['options'].fields.append(
+  _QUERYREQUEST_EXPRESSION_CALL.fields_by_name['set_lookup_options'])
+_QUERYREQUEST_EXPRESSION_CALL.fields_by_name['set_lookup_options'].containing_oneof = _QUERYREQUEST_EXPRESSION_CALL.oneofs_by_name['options']
+_QUERYREQUEST_EXPRESSION_SETLOOKUPOPTIONS.containing_type = _QUERYREQUEST_EXPRESSION
 _QUERYREQUEST_EXPRESSION.fields_by_name['literal'].message_type = _QUERYREQUEST_EXPRESSION_LITERAL
 _QUERYREQUEST_EXPRESSION.fields_by_name['call'].message_type = _QUERYREQUEST_EXPRESSION_CALL
 _QUERYREQUEST_EXPRESSION.containing_type = _QUERYREQUEST
@@ -367,17 +372,17 @@ QueryRequest = _reflection.GeneratedProtocolMessageType('QueryRequest', (_messag
       })
     ,
 
-    'StringList' : _reflection.GeneratedProtocolMessageType('StringList', (_message.Message,), {
-      'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION_STRINGLIST,
-      '__module__' : 'seqr_query_service_pb2'
-      # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression.StringList)
-      })
-    ,
-
     'Call' : _reflection.GeneratedProtocolMessageType('Call', (_message.Message,), {
       'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION_CALL,
       '__module__' : 'seqr_query_service_pb2'
       # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression.Call)
+      })
+    ,
+
+    'SetLookupOptions' : _reflection.GeneratedProtocolMessageType('SetLookupOptions', (_message.Message,), {
+      'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION_SETLOOKUPOPTIONS,
+      '__module__' : 'seqr_query_service_pb2'
+      # @@protoc_insertion_point(class_scope:seqr.QueryRequest.Expression.SetLookupOptions)
       })
     ,
     'DESCRIPTOR' : _QUERYREQUEST_EXPRESSION,
@@ -392,8 +397,8 @@ QueryRequest = _reflection.GeneratedProtocolMessageType('QueryRequest', (_messag
 _sym_db.RegisterMessage(QueryRequest)
 _sym_db.RegisterMessage(QueryRequest.Expression)
 _sym_db.RegisterMessage(QueryRequest.Expression.Literal)
-_sym_db.RegisterMessage(QueryRequest.Expression.StringList)
 _sym_db.RegisterMessage(QueryRequest.Expression.Call)
+_sym_db.RegisterMessage(QueryRequest.Expression.SetLookupOptions)
 
 QueryResponse = _reflection.GeneratedProtocolMessageType('QueryResponse', (_message.Message,), {
   'DESCRIPTOR' : _QUERYRESPONSE,
@@ -411,8 +416,8 @@ _QUERYSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=726,
-  serialized_end=792,
+  serialized_start=751,
+  serialized_end=817,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',

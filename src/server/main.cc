@@ -6,7 +6,8 @@
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
 #include <arrow/array/builder_binary.h>
-#include <arrow/compute/exec.h>
+#include <arrow/compute/api_scalar.h>
+#include <arrow/compute/function.h>
 #include <arrow/dataset/dataset.h>
 #include <arrow/dataset/scanner.h>
 #include <arrow/io/memory.h>
@@ -29,7 +30,9 @@
 #include <vector>
 
 #include "seqr_query_service.grpc.pb.h"
+#include "string_list_contains_any.h"
 
+namespace seqr {
 namespace {
 
 constexpr size_t kNumThreadPoolWorkers = 32;
@@ -211,21 +214,6 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
           return cp::literal(literal.double_value());
         case seqr::QueryRequest::Expression::Literal::kStringValue:
           return cp::literal(literal.string_value());
-        case seqr::QueryRequest::Expression::Literal::kStringList: {
-          arrow::StringBuilder builder;
-          for (const auto& str : literal.string_list().string_value()) {
-            if (const auto status = builder.Append(str); !status.ok()) {
-              return absl::InvalidArgumentError(absl::StrCat(
-                  "Failed to append string value: ", status.message()));
-            }
-          }
-          std::shared_ptr<arrow::Array> array;
-          if (const auto status = builder.Finish(&array); !status.ok()) {
-            return absl::InvalidArgumentError(absl::StrCat(
-                "Failed to build string array: ", status.message()));
-          }
-          return cp::literal(array);
-        }
       }
     }
 
@@ -240,7 +228,31 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
         }
         arguments.push_back(*std::move(expression));
       }
-      return cp::call(call.function_name(), std::move(arguments));
+
+      std::shared_ptr<cp::FunctionOptions> options;
+      switch (call.options_case()) {
+        case seqr::QueryRequest::Expression::Call::OPTIONS_NOT_SET:
+          break;
+        case seqr::QueryRequest::Expression::Call::kSetLookupOptions: {
+          arrow::StringBuilder builder;
+          for (const auto& str : call.set_lookup_options().values()) {
+            if (const auto status = builder.Append(str); !status.ok()) {
+              return absl::InvalidArgumentError(absl::StrCat(
+                  "Failed to append string value: ", status.message()));
+            }
+          }
+          std::shared_ptr<arrow::Array> value_set;
+          if (const auto status = builder.Finish(&value_set); !status.ok()) {
+            return absl::InvalidArgumentError(absl::StrCat(
+                "Failed to build string array: ", status.message()));
+          }
+          options =
+              std::make_shared<cp::SetLookupOptions>(value_set,
+                                                     /* skip_nulls */ true);
+        }
+      }
+
+      return cp::call(call.function_name(), std::move(arguments), options);
     }
   }
 }
@@ -481,6 +493,14 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
   const UrlReader& url_reader_;
 };
 
+absl::Status RegisterArrowComputeFunctions() {
+  if (const auto status = RegisterStringListContainsAny(); !status.ok()) {
+    return absl::InternalError(absl::StrCat(
+        "Error calling RegisterStringListContainsAny: ", status.message()));
+  }
+  return absl::OkStatus();
+}
+
 void RunServer(const int port) {
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -498,6 +518,7 @@ void RunServer(const int port) {
 }
 
 }  // namespace
+}  // namespace seqr
 
 int main(int argc, char** argv) {
   // Get the port number from the environment.
@@ -513,7 +534,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  RunServer(port);
+  if (const auto status = seqr::RegisterArrowComputeFunctions(); !status.ok()) {
+    std::cerr << status << std::endl;
+    return 1;
+  }
+
+  seqr::RunServer(port);
 
   return 0;
 }
