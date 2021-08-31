@@ -6,6 +6,8 @@
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
 #include <arrow/array/builder_binary.h>
+#include <arrow/compute/api_scalar.h>
+#include <arrow/compute/function.h>
 #include <arrow/dataset/dataset.h>
 #include <arrow/dataset/scanner.h>
 #include <arrow/io/memory.h>
@@ -212,21 +214,6 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
           return cp::literal(literal.double_value());
         case seqr::QueryRequest::Expression::Literal::kStringValue:
           return cp::literal(literal.string_value());
-        case seqr::QueryRequest::Expression::Literal::kStringList: {
-          arrow::StringBuilder builder;
-          for (const auto& str : literal.string_list().string_value()) {
-            if (const auto status = builder.Append(str); !status.ok()) {
-              return absl::InvalidArgumentError(absl::StrCat(
-                  "Failed to append string value: ", status.message()));
-            }
-          }
-          std::shared_ptr<arrow::Array> array;
-          if (const auto status = builder.Finish(&array); !status.ok()) {
-            return absl::InvalidArgumentError(absl::StrCat(
-                "Failed to build string array: ", status.message()));
-          }
-          return cp::literal(array);
-        }
       }
     }
 
@@ -241,7 +228,31 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
         }
         arguments.push_back(*std::move(expression));
       }
-      return cp::call(call.function_name(), std::move(arguments));
+
+      std::shared_ptr<cp::FunctionOptions> options;
+      switch (call.options_case()) {
+        case seqr::QueryRequest::Expression::Call::OPTIONS_NOT_SET:
+          break;
+        case seqr::QueryRequest::Expression::Call::kSetLookupOptions: {
+          arrow::StringBuilder builder;
+          for (const auto& str : call.set_lookup_options().values()) {
+            if (const auto status = builder.Append(str); !status.ok()) {
+              return absl::InvalidArgumentError(absl::StrCat(
+                  "Failed to append string value: ", status.message()));
+            }
+          }
+          std::shared_ptr<arrow::Array> value_set;
+          if (const auto status = builder.Finish(&value_set); !status.ok()) {
+            return absl::InvalidArgumentError(absl::StrCat(
+                "Failed to build string array: ", status.message()));
+          }
+          options =
+              std::make_shared<cp::SetLookupOptions>(value_set,
+                                                     /* skip_nulls */ true);
+        }
+      }
+
+      return cp::call(call.function_name(), std::move(arguments), options);
     }
   }
 }
