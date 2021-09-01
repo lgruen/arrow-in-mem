@@ -7,7 +7,7 @@ RUN mkdir -p /src/build && cd /src/build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 && \
-    make -j8
+    make -j8 all test
 
 RUN /build/extract-elf-so --cert /src/build/server/server && \
     mkdir /rootfs && cd /rootfs && \

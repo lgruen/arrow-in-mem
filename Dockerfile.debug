@@ -10,5 +10,3 @@ RUN mkdir -p /src/build && cd /src/build && \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_CXX_STANDARD=20 && \
     make -j8
-
-CMD ["lldb", "/src/build/server/server"]

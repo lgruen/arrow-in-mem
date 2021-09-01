@@ -91,22 +91,22 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
 
 }  // namespace
 
-arrow::Status RegisterStringListContainsAny() {
+arrow::Status RegisterStringListContainsAny(
+    cp::FunctionRegistry* const registry) {
   // See Arrow's scalar_set_lookup.cc's IsIn for reference.
   cp::ScalarKernel kernel;
   kernel.init = InitStringListContainsAny;
   kernel.exec = ExecStringListContainsAny;
   kernel.null_handling = cp::NullHandling::OUTPUT_NOT_NULL;
-  kernel.signature = cp::KernelSignature::Make(
-      {arrow::list(arrow::utf8()), arrow::utf8()}, arrow::boolean());
+  kernel.signature =
+      cp::KernelSignature::Make({arrow::list(arrow::utf8())}, arrow::boolean());
   auto string_list_contains_any = std::make_shared<cp::ScalarFunction>(
       "string_list_contains_any", cp::Arity::Unary(), nullptr);
   if (const auto status = string_list_contains_any->AddKernel(kernel);
       !status.ok()) {
     return status;
   }
-  return cp::GetFunctionRegistry()->AddFunction(
-      std::move(string_list_contains_any));
+  return registry->AddFunction(std::move(string_list_contains_any));
 }
 
 }  // namespace seqr

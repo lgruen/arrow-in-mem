@@ -41,14 +41,18 @@ pip3 install -r requirements.txt
 
 ### Debug build
 
-This drops into `lldb`:
-
 ```bash
 docker build --build-arg CMAKE_BUILD_TYPE=Debug --tag seqr-query-backend-base-debug -f Dockerfile.base .
 
 docker build --build-arg BASE_IMAGE=seqr-query-backend-base-debug --tag seqr-query-backend-debug -f Dockerfile.debug .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
+```
+
+To run the server in `lldb`:
+
+```bash
+lldb /src/build/server/server
 ```
 
 ## Cloud Run deployment

@@ -1,15 +1,9 @@
 find_package(Threads)
 
-set(SOURCES
-    main.cc
-    string_list_contains_any.cc
-)
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
-
 find_package(absl REQUIRED)
 find_package(protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(GTest REQUIRED)
 find_package(google_cloud_cpp_storage REQUIRED)
 find_package(Arrow REQUIRED)
 
@@ -20,19 +14,45 @@ else()
    message(FATAL_ERROR "TCMALLOC_LIB library not found")
 endif()
 
-add_executable(server ${SOURCES})
+add_compile_options(-Wall -Werror)
 
-target_compile_options(server PRIVATE -Wall -Werror)
+add_executable(server
+    main.cc
+    string_list_contains_any.cc
+)
 
 target_link_libraries(server PRIVATE
+    ${TCMALLOC_LIB}
     absl::base
     absl::status
     absl::statusor
     absl::strings
     arrow
     arrow_dataset
-    google-cloud-cpp::storage
     gRPC::grpc++_reflection
+    google-cloud-cpp::storage
     proto
-    ${TCMALLOC_LIB}
+    string_list_contains_any
 )
+
+add_library(string_list_contains_any
+    string_list_contains_any.cc
+)
+
+target_link_libraries(string_list_contains_any PRIVATE
+    absl::flat_hash_set
+    arrow
+)
+
+add_executable(string_list_contains_any_test
+    string_list_contains_any_test.cc
+)
+
+target_link_libraries(string_list_contains_any_test PRIVATE
+    ${TCMALLOC_LIB}
+    string_list_contains_any
+    gtest
+    gtest_main
+)
+
+add_test(NAME string_list_contains_any_test COMMAND string_list_contains_any_test)

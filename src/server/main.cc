@@ -494,7 +494,9 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
 };
 
 absl::Status RegisterArrowComputeFunctions() {
-  if (const auto status = RegisterStringListContainsAny(); !status.ok()) {
+  auto* const registry = arrow::compute::GetFunctionRegistry();
+  if (const auto status = RegisterStringListContainsAny(registry);
+      !status.ok()) {
     return absl::InternalError(absl::StrCat(
         "Error calling RegisterStringListContainsAny: ", status.message()));
   }
