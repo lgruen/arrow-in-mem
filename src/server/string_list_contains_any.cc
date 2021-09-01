@@ -70,6 +70,11 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
         // See BinaryJoin (scalar_string.cc).
         const auto end = list_offsets[i + 1];
         for (auto j = list_offsets[i]; j < end; ++j) {
+          // Need to check for null values here, as the docs say:
+          // "It should be noted that a null value may have a positive slot
+          // length. That is, a null value may occupy a non-empty memory space
+          // in the data buffer. When this is true, the content of the
+          // corresponding memory space is undefined."
           if (!strings.IsNull(j) && value_set.contains(strings.GetView(j))) {
             writer.Set();
             writer.Next();
