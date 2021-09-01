@@ -241,7 +241,7 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
                   "Failed to append string value: ", status.message()));
             }
           }
-          std::shared_ptr<arrow::Array> value_set;
+          std::shared_ptr<arrow::StringArray> value_set;
           if (const auto status = builder.Finish(&value_set); !status.ok()) {
             return absl::InvalidArgumentError(absl::StrCat(
                 "Failed to build string array: ", status.message()));
