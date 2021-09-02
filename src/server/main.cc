@@ -35,7 +35,9 @@
 namespace seqr {
 namespace {
 
-constexpr size_t kNumThreadPoolWorkers = 32;
+// This implicitly puts a limit on the amount of memory that's required, which
+// is important for Cloud Run deployments that only have 8 GB of RAM.
+constexpr size_t kNumThreadPoolWorkers = 16;
 
 absl::Status MaxRowsExceededError(const size_t max_rows) {
   return absl::CancelledError(
