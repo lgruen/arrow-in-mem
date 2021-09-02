@@ -16,7 +16,7 @@ gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
 IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:latest
 
-DOCKER_BUILDKIT=1 docker build --tag seqr-query-backend --cache-from=$IMAGE .
+DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --tag seqr-query-backend --cache-from=$IMAGE .
 
 docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ```
@@ -36,7 +36,7 @@ For debug builds, run:
 ```bash
 IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug
 
-DOCKER_BUILDKIT=1 docker build --build-arg CMAKE_BUILD_TYPE=Debug --target server --cache-from=$IMAGE --tag seqr-query-backend-debug .
+DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg CMAKE_BUILD_TYPE=Debug --target server --cache-from=$IMAGE --tag seqr-query-backend-debug .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
