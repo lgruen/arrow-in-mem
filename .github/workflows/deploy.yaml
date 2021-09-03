@@ -37,10 +37,16 @@ jobs:
             echo DEPLOYMENT_TYPE=dev >> $GITHUB_ENV
           fi
 
-      - name: build, test, and push image
+      - name: build base image
+          docker pull $DOCKER_IMAGE:$DEPLOYMENT_TYPE-base || true
+          docker build --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE-base --target=base .
+
+      - name: build and test deployment image
         run: |
-          docker buildx create --name builder --use
-          docker buildx build --tag $DOCKER_IMAGE:${{ github.sha }} --tag $DOCKER_IMAGE:$DEPLOYMENT_TYPE --platform=linux/amd64 --cache-from=type=registry,ref=$DOCKER_IMAGE:$DEPLOYMENT_TYPE --cache-to=type=registry,ref=$DOCKER_IMAGE:$DEPLOYMENT_TYPE,mode=max --push .
+          docker build --tag=$DOCKER_IMAGE:${{ github.sha }} --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE .
+      
+      - name: push images
+          docker push --all-tags $DOCKER_IMAGE
 
       - name: deploy to Cloud Run
         run: gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --service-account=seqr-$DEPLOYMENT_TYPE@seqr-308602.iam.gserviceaccount.com --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --image=$IMAGE:$DEPLOYMENT_TYPE seqr-query-backend-$DEPLOYMENT_TYPE

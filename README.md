@@ -15,9 +15,7 @@ multiple stages:
 - `server`: compilation of the server application and tests
 - `deploy`: stripped down image for deployment
 
-To cache the intermediate stages to the registry, we use
-[BuildKit](https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e)
-in the [GitHub Actions workflow](.github/workflows/deploy.yaml).
+There are separate [`prod` and `dev` deployments](.github/workflows/deploy.yaml), corresponding to the `main` and `dev` branches, respectively.
 
 ## Local testing
 
@@ -26,11 +24,9 @@ gcloud config set project seqr-308602
 
 gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
-docker buildx create --name builder --use
+docker pull australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev
 
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev
-
-docker buildx build --tag=seqr-query-backend --cache-from=type=registry,ref=$IMAGE --load .
+docker build --tag=seqr-query-backend .
 
 docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ```
@@ -48,9 +44,9 @@ pip3 install -r requirements.txt
 For debug builds, run:
 
 ```bash
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug
+docker pull australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug
 
-docker buildx build --tag=seqr-query-backend-debug --build-arg=CMAKE_BUILD_TYPE=Debug --target=server --cache-from=type=registry,ref=$IMAGE .
+docker build --tag=seqr-query-backend-debug --build-arg=CMAKE_BUILD_TYPE=Debug --target=server .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
