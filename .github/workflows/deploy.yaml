@@ -37,7 +37,7 @@ jobs:
           fi
 
       - name: pull base image
-          run: docker pull $DOCKER_IMAGE-base:$DEPLOYMENT_TYPE || true
+        run: docker pull $DOCKER_IMAGE-base:$DEPLOYMENT_TYPE || true
 
       - name: build base image
         run: docker build --tag=$DOCKER_IMAGE-base:${{ github.sha }} --tag=$DOCKER_IMAGE-base:$DEPLOYMENT_TYPE --target=base .
