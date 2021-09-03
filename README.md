@@ -24,7 +24,7 @@ gcloud config set project seqr-308602
 
 gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev-base
+IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend-base:dev
 
 docker pull $IMAGE
 
@@ -46,7 +46,7 @@ pip3 install -r requirements.txt
 For debug builds, run:
 
 ```bash
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug-base
+IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend-base:debug
 
 docker pull $IMAGE
 
