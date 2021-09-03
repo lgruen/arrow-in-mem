@@ -4,19 +4,31 @@ An experimental backend that could be an alternative to the Elasticsearch deploy
 
 To convert the annotated Hail tables to the [Apache Arrow](https://arrow.apache.org/) format that this backend uses, see the [`pipeline`](pipeline) directory.
 
-## Local testing
+## Docker stages
 
-The `base` stage in the [`Dockerfile`](Dockerfile) takes a while to build, which is why
-using Docker caching is worthwhile to usually skip right to the `server` stage:
+To reduce image build times and reduce final image size, the build is split into
+multiple stages:
+
+- `base`: build dependencies
+- `server`: compilation of the server application and tests
+- `deploy`: stripped down image for deployment
+
+To cache the intermediate stages to the registry, we use
+[BuildKit](https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e)
+in the GitHub Actions workflow.
+
+## Local testing
 
 ```bash
 gcloud config set project seqr-308602
 
 gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
+docker buildx create --name builder --use
+
 IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:latest
 
-DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --tag seqr-query-backend --cache-from=$IMAGE .
+docker buildx build -t seqr-query-backend --cache-from=type=registry,ref=$IMAGE --load .
 
 docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ```
@@ -36,7 +48,7 @@ For debug builds, run:
 ```bash
 IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug
 
-DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg CMAKE_BUILD_TYPE=Debug --target server --cache-from=$IMAGE --tag seqr-query-backend-debug .
+docker buildx build -t seqr-query-backend-debug --cache-from=type=registry,ref=$IMAGE .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
@@ -44,7 +56,7 @@ docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-
 Within the container, run the server in `lldb`:
 
 ```bash
-lldb /src/build/server/server
+lldb /src/build/server/seqr_query_backend
 ```
 
 ## Cloud Run deployment

@@ -142,12 +142,14 @@ RUN mkdir -p /src/build && cd /src/build && \
 
 FROM server AS extract
 
-RUN /build/extract-elf-so --cert /src/build/server/server && \
+RUN /build/extract-elf-so --cert /src/build/server/seqr_query_backend && \
     mkdir /rootfs && cd /rootfs && \
     tar xf /rootfs.tar
 
-FROM debian:bullseye-slim AS slim
+FROM debian:bullseye-slim AS deploy
 
 COPY --from=extract /rootfs /
 
 RUN ldconfig
+
+CMD ["/usr/local/bin/seqr_query_backend"]

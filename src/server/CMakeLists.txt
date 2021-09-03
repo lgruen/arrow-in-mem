@@ -16,13 +16,20 @@ endif()
 
 add_compile_options(-Wall -Werror)
 
-add_executable(server
+add_executable(seqr_query_backend
     main.cc
-    string_list_contains_any.cc
+)
+
+target_link_libraries(seqr_query_backend PRIVATE
+    ${TCMALLOC_LIB}
+    server
+)
+
+add_library(server
+    server.cc
 )
 
 target_link_libraries(server PRIVATE
-    ${TCMALLOC_LIB}
     absl::base
     absl::status
     absl::statusor
