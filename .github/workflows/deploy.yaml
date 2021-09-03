@@ -39,7 +39,7 @@ jobs:
       - name: build base image
         run: |
           docker pull $DOCKER_IMAGE:$DEPLOYMENT_TYPE-base || true
-          docker build --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE-base --target=base .
+          docker build --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE-base --cache-from=$DOCKER_IMAGE:$DEPLOYMENT_TYPE-base --target=base .
 
       - name: build and test deployment image
         run: docker build --tag=$DOCKER_IMAGE:${{ github.sha }} --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE .

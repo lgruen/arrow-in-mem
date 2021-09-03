@@ -24,9 +24,11 @@ gcloud config set project seqr-308602
 
 gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
-docker pull australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev-base
+IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev-base
 
-docker build --tag=seqr-query-backend .
+docker pull $IMAGE
+
+docker build --tag=seqr-query-backend --cache-from=$IMAGE .
 
 docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ```
@@ -44,9 +46,11 @@ pip3 install -r requirements.txt
 For debug builds, run:
 
 ```bash
-docker pull australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug-base
+IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug-base
 
-docker build --tag=seqr-query-backend-debug --build-arg=CMAKE_BUILD_TYPE=Debug --target=server .
+docker pull $IMAGE
+
+docker build --tag=seqr-query-backend-debug --cache-from=$IMAGE --build-arg=CMAKE_BUILD_TYPE=Debug --target=server .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
