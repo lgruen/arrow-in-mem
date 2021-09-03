@@ -2,7 +2,9 @@
 
 An experimental backend that could be an alternative to the Elasticsearch deployment that seqr currently uses.
 
-To convert the annotated Hail tables to the [Apache Arrow](https://arrow.apache.org/) format that this backend uses, see the [`pipeline`](pipeline) directory.
+Implements a simple [query API](src/proto/seqr_query_service.proto) using [gRPC](https://grpc.io/).
+
+To convert seqr's annotated Hail tables to the [Apache Arrow](https://arrow.apache.org/) format that this backend uses, see the [`pipeline`](pipeline) directory.
 
 ## Docker stages
 
