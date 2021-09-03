@@ -52,4 +52,4 @@ jobs:
         run: docker push --all-tags $DOCKER_IMAGE
 
       - name: deploy to Cloud Run
-        run: gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --service-account=seqr-$DEPLOYMENT_TYPE@seqr-308602.iam.gserviceaccount.com --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --image=$IMAGE:$DEPLOYMENT_TYPE seqr-query-backend-$DEPLOYMENT_TYPE
+        run: gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --service-account=seqr-$DEPLOYMENT_TYPE@seqr-308602.iam.gserviceaccount.com --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --image=$DOCKER_IMAGE:$DEPLOYMENT_TYPE seqr-query-backend-$DEPLOYMENT_TYPE
