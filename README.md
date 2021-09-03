@@ -15,7 +15,7 @@ multiple stages:
 
 To cache the intermediate stages to the registry, we use
 [BuildKit](https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e)
-in the GitHub Actions workflow.
+in the [GitHub Actions workflow](.github/workflows/deploy.yaml).
 
 ## Local testing
 
@@ -26,9 +26,9 @@ gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
 docker buildx create --name builder --use
 
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:latest
+IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:dev
 
-docker buildx build -t seqr-query-backend --cache-from=type=registry,ref=$IMAGE --load .
+docker buildx build --tag=seqr-query-backend --cache-from=type=registry,ref=$IMAGE --load .
 
 docker run --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend
 ```
@@ -48,7 +48,7 @@ For debug builds, run:
 ```bash
 IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:debug
 
-docker buildx build -t seqr-query-backend-debug --cache-from=type=registry,ref=$IMAGE .
+docker buildx build --tag=seqr-query-backend-debug --build-arg=CMAKE_BUILD_TYPE=Debug --target=server --cache-from=type=registry,ref=$IMAGE .
 
 docker run --privileged --init -it -e PORT=8080 -p 8080:8080 seqr-query-backend-debug
 ```
@@ -61,19 +61,13 @@ lldb /src/build/server/seqr_query_backend
 
 ## Cloud Run deployment
 
-```bash
-IMAGE=australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend:latest
-
-gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --service-account=seqr-query-backend@seqr-308602.iam.gserviceaccount.com --image=$IMAGE seqr-query-backend
-```
-
 To use the test client with the Cloud Run deployment, either set the
 `GOOGLE_APPLICATION_CREDENTIALS` environment variable or run the client from a Compute
 Engine VM. The associated service account needs to have invoker permissions for the
 Cloud Run deployment.
 
 ```bash
-CLOUD_RUN_URL=$(gcloud run services describe seqr-query-backend --platform managed --region australia-southeast1 --format 'value(status.url)')
+CLOUD_RUN_URL=$(gcloud run services describe seqr-query-backend-dev --platform=managed --region=australia-southeast1 --format='value(status.url)')
 
 cd src/client
 

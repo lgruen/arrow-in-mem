@@ -1,0 +1,46 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_PROGRESS: plain
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      DOCKER_IMAGE: australia-southeast1-docker.pkg.dev/seqr-308602/seqr-project/seqr-query-backend
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: gcloud setup
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: seqr-308602
+          service_account_key: ${{ secrets.GCP_DEPLOY_KEY }}
+
+      - name: gcloud docker auth
+        run: |
+          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
+      
+      - name: set deployment type
+        run: |
+          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+            echo DEPLOYMENT_TYPE=prod >> $GITHUB_ENV
+          else
+            echo DEPLOYMENT_TYPE=dev >> $GITHUB_ENV
+          fi
+
+      - name: build, test, and push image
+        run: |
+          docker buildx create --name builder --use
+          docker buildx build --tag $DOCKER_IMAGE:${{ github.sha }} --tag $DOCKER_IMAGE:$DEPLOYMENT_TYPE --cache-from=type=registry,ref=$DOCKER_IMAGE:$DEPLOYMENT_TYPE --cache-to=type=registry,ref=$DOCKER_IMAGE:$DEPLOYMENT_TYPE,mode=max --push .
+
+      - name: deploy to Cloud Run
+        run: gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --service-account=seqr-$DEPLOYMENT_TYPE@seqr-308602.iam.gserviceaccount.com --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --image=$IMAGE:$DEPLOYMENT_TYPE seqr-query-backend-$DEPLOYMENT_TYPE
