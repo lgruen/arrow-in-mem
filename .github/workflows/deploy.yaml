@@ -26,8 +26,7 @@ jobs:
           service_account_key: ${{ secrets.GCP_DEPLOY_KEY }}
 
       - name: gcloud docker auth
-        run: |
-          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
+        run: gcloud auth configure-docker australia-southeast1-docker.pkg.dev
       
       - name: set deployment type
         run: |
@@ -38,15 +37,15 @@ jobs:
           fi
 
       - name: build base image
+        run: |
           docker pull $DOCKER_IMAGE:$DEPLOYMENT_TYPE-base || true
           docker build --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE-base --target=base .
 
       - name: build and test deployment image
-        run: |
-          docker build --tag=$DOCKER_IMAGE:${{ github.sha }} --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE .
+        run: docker build --tag=$DOCKER_IMAGE:${{ github.sha }} --tag=$DOCKER_IMAGE:$DEPLOYMENT_TYPE .
       
       - name: push images
-          docker push --all-tags $DOCKER_IMAGE
+        run: docker push --all-tags $DOCKER_IMAGE
 
       - name: deploy to Cloud Run
         run: gcloud run deploy --region=australia-southeast1 --no-allow-unauthenticated --service-account=seqr-$DEPLOYMENT_TYPE@seqr-308602.iam.gserviceaccount.com --concurrency=1 --max-instances=100 --cpu=4 --memory=8Gi --image=$IMAGE:$DEPLOYMENT_TYPE seqr-query-backend-$DEPLOYMENT_TYPE
