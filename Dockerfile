@@ -131,8 +131,7 @@ RUN curl -sSL -o /deps/extract-elf-so https://github.com/William-Yeh/extract-elf
 
 FROM base AS server
 
-WORKDIR /app
-
+COPY CMakeLists.txt /app/
 COPY server /app/server
 COPY proto /app/proto
 
