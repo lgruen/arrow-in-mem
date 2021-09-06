@@ -42,6 +42,20 @@ target_link_libraries(server PRIVATE
     string_list_contains_any
 )
 
+add_executable(server_test
+    server_test.cc
+)
+
+target_link_libraries(server_test PRIVATE
+    ${TCMALLOC_LIB}
+    gtest
+    gtest_main
+    proto
+    server
+)
+
+add_test(NAME server_test COMMAND server_test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(string_list_contains_any
     string_list_contains_any.cc
 )
@@ -57,9 +71,9 @@ add_executable(string_list_contains_any_test
 
 target_link_libraries(string_list_contains_any_test PRIVATE
     ${TCMALLOC_LIB}
-    string_list_contains_any
     gtest
     gtest_main
+    string_list_contains_any
 )
 
-add_test(NAME string_list_contains_any_test COMMAND string_list_contains_any_test)
+add_test(NAME string_list_contains_any_test COMMAND string_list_contains_any_test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
