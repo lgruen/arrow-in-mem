@@ -8,8 +8,8 @@ To convert seqr's annotated Hail tables to the [Apache Arrow](https://arrow.apac
 
 ## Docker stages
 
-To reduce image build times and reduce final image size, the build is split into
-multiple stages:
+To reduce repeated image build times and reduce final image size, the build is split
+into multiple stages:
 
 - `base`: build dependencies
 - `server`: compilation of the server application and tests
