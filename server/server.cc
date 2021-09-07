@@ -219,7 +219,7 @@ absl::StatusOr<arrow::RecordBatchVector> ProcessArrowUrl(
   // We parallelize over URLs already, no need for nested parallelism.
   ipc_read_options.use_threads = false;
 
-  arrow::io::BufferReader buffer_reader{*data};
+  arrow::io::BufferReader buffer_reader{{data->data(), data->size()}};
   auto record_batch_file_reader =
       arrow::ipc::RecordBatchFileReader::Open(&buffer_reader, ipc_read_options);
   if (!record_batch_file_reader.ok()) {

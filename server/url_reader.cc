@@ -5,6 +5,9 @@
 #include <absl/strings/strip.h>
 #include <google/cloud/storage/client.h>
 
+#include <filesystem>
+#include <fstream>
+
 ABSL_DECLARE_FLAG(int, num_threads);
 
 namespace seqr {
@@ -13,39 +16,48 @@ namespace gcs = google::cloud::storage;
 
 namespace {
 
-// Returns the bucket and file name from a complete gs:// path.
-absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
-    std::string_view blob_path) {
-  if (!absl::ConsumePrefix(&blob_path, "gs://")) {
-    return absl::InvalidArgumentError("Missing gs:// prefix");
-  }
-  const size_t slash_pos = blob_path.find_first_of('/');
-  if (slash_pos == std::string_view::npos) {
-    return absl::InvalidArgumentError("Incomplete blob path");
-  }
-  return std::make_pair(blob_path.substr(0, slash_pos),
-                        blob_path.substr(slash_pos + 1));
-}
-
-class GcsReader : public UrlReader {
+class LocalFileReader : public UrlReader {
  public:
-  absl::StatusOr<std::string> Read(const std::string_view url) const override {
-    if (!url.starts_with("gs://")) {
+  absl::StatusOr<std::vector<char>> Read(std::string_view url) const override {
+    if (!absl::ConsumePrefix(&url, "file://")) {
       return absl::InvalidArgumentError(absl::StrCat("Unsupported URL: ", url));
     }
 
-    // Make a copy of the GCS client for thread-safety.
-    gcs::Client gcs_client = shared_gcs_client_;
-    const auto& split_path = SplitBlobPath(url);
-    if (!split_path.ok()) {
+    const std::uintmax_t file_size = std::filesystem::file_size(url);
+    if (file_size == static_cast<std::uintmax_t>(-1)) {
       return absl::InvalidArgumentError(
-          absl::StrCat("Invalid path", split_path.status().message()));
+          absl::StrCat("Failed to determine file size for ", url));
     }
 
+    std::vector<char> result(file_size, 0);
+    std::ifstream ifs{std::string(url)};
+    ifs.read(result.data(), file_size);
+    return result;
+  }
+};
+
+class GcsReader : public UrlReader {
+ public:
+  absl::StatusOr<std::vector<char>> Read(std::string_view url) const override {
+    if (!absl::ConsumePrefix(&url, "gs://")) {
+      return absl::InvalidArgumentError(absl::StrCat("Unsupported URL: ", url));
+    }
+
+    const size_t slash_pos = url.find_first_of('/');
+    if (slash_pos == std::string_view::npos) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Incomplete blob URL ", url));
+    }
+
+    const auto bucket = url.substr(0, slash_pos);
+    const auto blob = url.substr(slash_pos + 1);
+
+    // Make a copy of the GCS client for thread-safety.
+    gcs::Client gcs_client = shared_gcs_client_;
+
     try {
-      const absl::Time start_time = absl::Now();
-      auto reader = gcs_client.ReadObject(std::string(split_path->first),
-                                          std::string(split_path->second));
+      auto reader =
+          gcs_client.ReadObject(std::string(bucket), std::string(blob));
       if (reader.bad()) {
         return absl::InvalidArgumentError(
             absl::StrCat("Failed to read blob: ", reader.status().message()));
@@ -66,15 +78,12 @@ class GcsReader : public UrlReader {
         return absl::NotFoundError("Couldn't find content-length header");
       }
 
-      std::string result(*content_length, 0);
-      reader.read(result.data(), *content_length);
+      std::vector<char> result(*content_length, '\0');
+      reader.read(result.data(), result.size());
       if (reader.bad()) {
         return absl::InvalidArgumentError(
             absl::StrCat("Failed to read blob: ", reader.status().message()));
       }
-      const absl::Time end_time = absl::Now();
-      std::cout << "Read " << url << " (" << *content_length << "B) in "
-                << (end_time - start_time) << std::endl;
       return result;
     } catch (const std::exception& e) {
       // Unfortunately the googe-cloud-storage library throws exceptions.
@@ -92,8 +101,8 @@ class GcsReader : public UrlReader {
 
 }  // namespace
 
-absl::StatusOr<std::unique_ptr<UrlReader>> MakeFileReader() {
-  return absl::UnimplementedError("FileReader is not implemented");
+absl::StatusOr<std::unique_ptr<UrlReader>> MakeLocalFileReader() {
+  return std::make_unique<LocalFileReader>();
 }
 
 absl::StatusOr<std::unique_ptr<UrlReader>> MakeGcsReader() {

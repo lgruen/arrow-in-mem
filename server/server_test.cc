@@ -14,9 +14,9 @@ namespace seqr {
 
 TEST(Server, EndToEnd) {
   constexpr int kPort = 12345;
-  const auto file_reader = MakeFileReader();
-  ASSERT_TRUE(file_reader.ok());
-  auto server = CreateServer(kPort, **file_reader);
+  const auto local_file_reader = MakeLocalFileReader();
+  ASSERT_TRUE(local_file_reader.ok());
+  auto server = CreateServer(kPort, **local_file_reader);
   ASSERT_TRUE(server.ok()) << server.status();
 
   auto channel = grpc::CreateChannel(absl::StrCat("localhost:", kPort),
