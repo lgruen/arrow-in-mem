@@ -26,13 +26,14 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto server = seqr::CreateServer(port, **gcs_reader);
-  if (!server.ok()) {
-    std::cerr << "Failed to create server: " << server.status() << std::endl;
+  auto grpc_server = seqr::CreateServer(port, **gcs_reader);
+  if (!grpc_server.ok()) {
+    std::cerr << "Failed to create server: " << grpc_server.status()
+              << std::endl;
     return 1;
   }
 
-  (*server)->Wait();
+  (*grpc_server)->server->Wait();
 
   return 0;
 }

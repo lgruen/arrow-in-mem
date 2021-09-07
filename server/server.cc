@@ -422,9 +422,19 @@ absl::Status RegisterArrowComputeFunctions() {
   return absl::OkStatus();
 }
 
+class GrpcServerImpl : public GrpcServer {
+ public:
+  GrpcServerImpl(const UrlReader& url_reader)
+      : query_service_impl(url_reader) {}
+
+  // The server does not take ownership of the services, which is why we keep
+  // the service alive here.
+  QueryServiceImpl query_service_impl;
+};
+
 }  // namespace
 
-absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(
+absl::StatusOr<std::unique_ptr<GrpcServer>> CreateServer(
     const int port, const UrlReader& url_reader) {
   if (const auto status = seqr::RegisterArrowComputeFunctions(); !status.ok()) {
     return absl::InternalError(absl::StrCat(
@@ -439,10 +449,10 @@ absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 
-  QueryServiceImpl query_service(url_reader);
-  builder.RegisterService(&query_service);
-
-  return builder.BuildAndStart();
+  auto result = std::make_unique<GrpcServerImpl>(url_reader);
+  builder.RegisterService(&result->query_service_impl);
+  result->server = builder.BuildAndStart();
+  return result;
 }
 
 }  // namespace seqr
