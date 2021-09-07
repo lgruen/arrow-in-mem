@@ -39,16 +39,17 @@ arrow::Result<std::unique_ptr<cp::KernelState>> InitStringListContainsAny(
       },
       [] {});
 
+  if (result->value_set.empty()) {
+    return arrow::Status::Invalid("SetLookupOptions value_set is empty");
+  }
+
   return result;
 }
 
-arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
-                                        const cp::ExecBatch& batch,
-                                        arrow::Datum* const out) {
-  const auto state =
-      static_cast<const StringListContainsAnyState&>(*ctx->state());
-  const auto& value_set = state.value_set;  // Based on SetLookupOptions.
-
+template <typename Comparator>
+arrow::Status ExecStringListContainsAnyWithComparator(
+    cp::KernelContext* const ctx, const cp::ExecBatch& batch,
+    arrow::Datum* const out, const Comparator& comparator) {
   // The boolean output array has already been preallocated.
   // See IsIn (scalar_set_lookup.cc).
   arrow::ArrayData* const output = out->mutable_array();
@@ -75,7 +76,7 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
           // length. That is, a null value may occupy a non-empty memory space
           // in the data buffer. When this is true, the content of the
           // corresponding memory space is undefined."
-          if (!strings.IsNull(j) && value_set.contains(strings.GetView(j))) {
+          if (!strings.IsNull(j) && comparator(strings.GetView(j))) {
             writer.Set();
             writer.Next();
             return;
@@ -92,6 +93,28 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
   writer.Finish();
 
   return arrow::Status::OK();
+}
+
+arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
+                                        const cp::ExecBatch& batch,
+                                        arrow::Datum* const out) {
+  const auto state =
+      static_cast<const StringListContainsAnyState&>(*ctx->state());
+  const auto& value_set = state.value_set;  // Based on SetLookupOptions.
+
+  if (value_set.size() == 1) {  // Fast path for comparing with a single string.
+    return ExecStringListContainsAnyWithComparator(
+        ctx, batch, out,
+        [value = *(value_set.begin())](const arrow::util::string_view sv) {
+          return sv == value;
+        });
+  }
+
+  // Default path, when there's an actual set of strings.
+  return ExecStringListContainsAnyWithComparator(
+      ctx, batch, out, [&value_set](const arrow::util::string_view sv) {
+        return value_set.contains(sv);
+      });
 }
 
 }  // namespace

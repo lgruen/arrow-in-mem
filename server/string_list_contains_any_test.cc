@@ -11,51 +11,12 @@
 namespace seqr {
 namespace cp = arrow::compute;
 
-TEST(TestStringListContainsAny, BasicTests) {
-  // Don't clobber the global registry.
-  const auto registry = cp::FunctionRegistry::Make();
-  ASSERT_OK(RegisterStringListContainsAny(registry.get()));
-
-  // The strings to search for.
-  const std::vector<std::string> lookup_values{"s02", "s04"};
-
-  // Build the input array (lists of strings).
-  const std::vector<std::vector<std::string>> string_values{
-      {"s01", "s02", "s03"},           // true: "s02"
-      {},                              // false
-      {},                              // false
-      {"s02", "s01", "s01", "s02"},    // true: "s02"
-      {"s02", "s01", "s01", "s02"},    // false: "s02", but string value invalid
-      {"s02"},                         // true: "s02"
-      {"s03", "s04", "s05"},           // true: "s04"
-      {"s01"},                         // false
-      {"s02"},                         // false: "s02", but list value invalid
-      {},                              // false
-      {"s01", "", "", "s03"},          // false
-      {"s12", "s42", "s02", "s5784"},  // true: "s02"
-  };
-
-  const std::vector<bool> list_validity{true, true, false, true,  true, true,
-                                        true, true, false, false, true, true};
-
-  const std::vector<std::vector<bool>> string_validity{
-      {true, true, true},
-      {},
-      {},
-      {true, true, true, true},
-      {false, true, true, false},
-      {true},
-      {true, true, true},
-      {true},
-      {true},
-      {},
-      {true, true, true, true},
-      {true, true, true, true}};
-
-  const std::vector<bool> expected_values{true,  false, false, true,
-                                          false, true,  true,  false,
-                                          false, false, false, true};
-
+void CheckStringListContainsAny(
+    const std::vector<std::string>& lookup_values,
+    const std::vector<std::vector<std::string>>& string_values,
+    const std::vector<bool>& list_validity,
+    const std::vector<std::vector<bool>>& string_validity,
+    const std::vector<bool>& expected_values) {
   ASSERT_EQ(string_values.size(), list_validity.size());
   ASSERT_EQ(string_values.size(), string_validity.size());
   ASSERT_EQ(string_values.size(), expected_values.size());
@@ -98,6 +59,10 @@ TEST(TestStringListContainsAny, BasicTests) {
   ASSERT_OK(value_set_builder.Finish(&value_set));
   const cp::SetLookupOptions options{value_set, false};
 
+  // Don't clobber the global registry.
+  const auto registry = cp::FunctionRegistry::Make();
+  ASSERT_OK(RegisterStringListContainsAny(registry.get()));
+
   // Execute the function.
   cp::ExecContext ctx(memory_pool, nullptr, registry.get());
   auto result =
@@ -112,6 +77,93 @@ TEST(TestStringListContainsAny, BasicTests) {
   std::shared_ptr<arrow::BooleanArray> expected;
   ASSERT_OK(expected_builder.Finish(&expected));
   ASSERT_EQ(*result, *expected);
+}
+
+TEST(TestStringListContainsAny, OneLookupValues) {
+  // One lookup value triggers the fast path.
+  const std::vector<std::string> lookup_values{"s02"};
+
+  const std::vector<std::vector<std::string>> string_values{
+      {"s01", "s02", "s03"},           // true: "s02"
+      {},                              // false
+      {},                              // false
+      {"s02", "s01", "s01", "s02"},    // true: "s02"
+      {"s02", "s01", "s01", "s02"},    // false: "s02", but string value invalid
+      {"s02"},                         // true: "s02"
+      {"s03", "s04", "s05"},           // false
+      {"s01"},                         // false
+      {"s02"},                         // false: "s02", but list value invalid
+      {},                              // false
+      {"s01", "", "", "s03"},          // false
+      {"s12", "s42", "s02", "s5784"},  // true: "s02"
+  };
+
+  const std::vector<bool> list_validity{true, true, false, true,  true, true,
+                                        true, true, false, false, true, true};
+
+  const std::vector<std::vector<bool>> string_validity{
+      {true, true, true},
+      {},
+      {},
+      {true, true, true, true},
+      {false, true, true, false},
+      {true},
+      {true, true, true},
+      {true},
+      {true},
+      {},
+      {true, true, true, true},
+      {true, true, true, true}};
+
+  const std::vector<bool> expected_values{true,  false, false, true,
+                                          false, true,  false, false,
+                                          false, false, false, true};
+
+  CheckStringListContainsAny(lookup_values, string_values, list_validity,
+                             string_validity, expected_values);
+}
+
+TEST(TestStringListContainsAny, TwoLookupValues) {
+  const std::vector<std::string> lookup_values{"s02", "s04"};
+
+  const std::vector<std::vector<std::string>> string_values{
+      {"s01", "s02", "s03"},           // true: "s02"
+      {},                              // false
+      {},                              // false
+      {"s02", "s01", "s01", "s02"},    // true: "s02"
+      {"s02", "s01", "s01", "s02"},    // false: "s02", but string value invalid
+      {"s02"},                         // true: "s02"
+      {"s03", "s04", "s05"},           // true: "s04"
+      {"s01"},                         // false
+      {"s02"},                         // false: "s02", but list value invalid
+      {},                              // false
+      {"s01", "", "", "s03"},          // false
+      {"s12", "s42", "s02", "s5784"},  // true: "s02"
+  };
+
+  const std::vector<bool> list_validity{true, true, false, true,  true, true,
+                                        true, true, false, false, true, true};
+
+  const std::vector<std::vector<bool>> string_validity{
+      {true, true, true},
+      {},
+      {},
+      {true, true, true, true},
+      {false, true, true, false},
+      {true},
+      {true, true, true},
+      {true},
+      {true},
+      {},
+      {true, true, true, true},
+      {true, true, true, true}};
+
+  const std::vector<bool> expected_values{true,  false, false, true,
+                                          false, true,  true,  false,
+                                          false, false, false, true};
+
+  CheckStringListContainsAny(lookup_values, string_values, list_validity,
+                             string_validity, expected_values);
 }
 
 }  // namespace seqr
