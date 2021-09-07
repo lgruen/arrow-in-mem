@@ -22,15 +22,18 @@ add_executable(seqr_query_backend
 
 target_link_libraries(seqr_query_backend PRIVATE
     ${TCMALLOC_LIB}
+    absl::flags_parse
     server
 )
 
 add_library(server
     server.cc
+    url_reader.cc
 )
 
 target_link_libraries(server PRIVATE
     absl::base
+    absl::flags
     absl::status
     absl::statusor
     absl::strings

@@ -1,8 +1,12 @@
+#include <absl/flags/parse.h>
+
 #include <cstdlib>
 
 #include "server.h"
 
 int main(int argc, char** argv) {
+  absl::ParseCommandLine(argc, argv);
+
   const char* const port_env = std::getenv("PORT");
   if (port_env == nullptr) {
     std::cerr << "PORT environment variable not set" << std::endl;
@@ -15,9 +19,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto server = seqr::CreateServer(port);
+  auto gcs_reader = seqr::MakeGcsReader();
+  if (!gcs_reader.ok()) {
+    std::cerr << "Failed to create GCS reader: " << gcs_reader.status()
+              << std::endl;
+    return 1;
+  }
+
+  auto server = seqr::CreateServer(port, **gcs_reader);
   if (!server.ok()) {
-    std::cerr << server.status() << std::endl;
+    std::cerr << "Failed to create server: " << server.status() << std::endl;
     return 1;
   }
 

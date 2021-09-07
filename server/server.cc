@@ -1,9 +1,9 @@
 #include "server.h"
 
 #include <absl/base/thread_annotations.h>
+#include <absl/flags/flag.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
-#include <absl/strings/strip.h>
 #include <absl/synchronization/blocking_counter.h>
 #include <absl/synchronization/mutex.h>
 #include <absl/time/time.h>
@@ -16,7 +16,6 @@
 #include <arrow/ipc/options.h>
 #include <arrow/ipc/reader.h>
 #include <arrow/ipc/writer.h>
-#include <google/cloud/storage/client.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -34,12 +33,13 @@
 #include "seqr_query_service.grpc.pb.h"
 #include "string_list_contains_any.h"
 
+ABSL_FLAG(int, num_threads, 16,
+          "The number of thread pool workers. This implicitly puts a limit on "
+          "the amount of memory that's required, which is important for Cloud "
+          "Run deployments that only have 8 GB of RAM.");
+
 namespace seqr {
 namespace {
-
-// This implicitly puts a limit on the amount of memory that's required, which
-// is important for Cloud Run deployments that only have 8 GB of RAM.
-constexpr size_t kNumThreadPoolWorkers = 16;
 
 absl::Status MaxRowsExceededError(const size_t max_rows) {
   return absl::CancelledError(
@@ -51,6 +51,7 @@ absl::Status MaxRowsExceededError(const size_t max_rows) {
 class ThreadPool {
  public:
   explicit ThreadPool(const int num_threads) {
+    assert(num_threads > 0);
     for (int i = 0; i < num_threads; ++i) {
       threads_.push_back(std::thread(&ThreadPool::WorkLoop, this));
     }
@@ -102,92 +103,6 @@ class ThreadPool {
   absl::Mutex mu_;
   std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mu_);
   std::vector<std::thread> threads_;
-};
-
-class UrlReader {
- public:
-  virtual ~UrlReader() = default;
-
-  virtual absl::StatusOr<std::string> Read(absl::string_view url) const = 0;
-};
-
-// Returns the bucket and file name from a complete gs:// path.
-absl::StatusOr<std::pair<std::string_view, std::string_view>> SplitBlobPath(
-    std::string_view blob_path) {
-  if (!absl::ConsumePrefix(&blob_path, "gs://")) {
-    return absl::InvalidArgumentError("Missing gs:// prefix");
-  }
-  const size_t slash_pos = blob_path.find_first_of('/');
-  if (slash_pos == std::string_view::npos) {
-    return absl::InvalidArgumentError("Incomplete blob path");
-  }
-  return std::make_pair(blob_path.substr(0, slash_pos),
-                        blob_path.substr(slash_pos + 1));
-}
-
-namespace gcs = google::cloud::storage;
-
-class GcsReader : public UrlReader {
- public:
-  absl::StatusOr<std::string> Read(const absl::string_view url) const override {
-    if (!url.starts_with("gs://")) {
-      return absl::InvalidArgumentError(absl::StrCat("Unsupported URL: ", url));
-    }
-
-    // Make a copy of the GCS client for thread-safety.
-    gcs::Client gcs_client = shared_gcs_client_;
-    const auto& split_path = SplitBlobPath(url);
-    if (!split_path.ok()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Invalid path", split_path.status().message()));
-    }
-
-    try {
-      const absl::Time start_time = absl::Now();
-      auto reader = gcs_client.ReadObject(std::string(split_path->first),
-                                          std::string(split_path->second));
-      if (reader.bad()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Failed to read blob: ", reader.status().message()));
-      }
-
-      std::optional<int> content_length;
-      for (const auto& header : reader.headers()) {
-        if (header.first == "content-length") {
-          int value = 0;
-          if (!absl::SimpleAtoi(header.second, &value)) {
-            return absl::NotFoundError(
-                "Couldn't parse content-length header value");
-          }
-          content_length = value;
-        }
-      }
-      if (!content_length) {
-        return absl::NotFoundError("Couldn't find content-length header");
-      }
-
-      std::string result(*content_length, 0);
-      reader.read(result.data(), *content_length);
-      if (reader.bad()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Failed to read blob: ", reader.status().message()));
-      }
-      const absl::Time end_time = absl::Now();
-      std::cout << "Read " << url << " (" << *content_length << "B) in "
-                << (end_time - start_time) << std::endl;
-      return result;
-    } catch (const std::exception& e) {
-      // Unfortunately the googe-cloud-storage library throws exceptions.
-      return absl::InternalError(
-          absl::StrCat("Exception during reading of ", url, ": ", e.what()));
-    }
-  }
-
- private:
-  // Share connection pool, but need to make copies for thread-safety.
-  gcs::Client shared_gcs_client_{
-      google::cloud::Options{}.set<gcs::ConnectionPoolSizeOption>(
-          kNumThreadPoolWorkers)};
 };
 
 // Returns an Arrow compute expression from the protobuf specification.
@@ -493,7 +408,7 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
     return grpc::Status::OK;
   }
 
-  ThreadPool thread_pool_{kNumThreadPoolWorkers};
+  ThreadPool thread_pool_{absl::GetFlag(FLAGS_num_threads)};
   const UrlReader& url_reader_;
 };
 
@@ -509,7 +424,8 @@ absl::Status RegisterArrowComputeFunctions() {
 
 }  // namespace
 
-absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(const int port) {
+absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(
+    const int port, const UrlReader& url_reader) {
   if (const auto status = seqr::RegisterArrowComputeFunctions(); !status.ok()) {
     return absl::InternalError(absl::StrCat(
         "Failed to register Arrow compute functions: ", status.message()));
@@ -523,8 +439,7 @@ absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(const int port) {
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 
-  GcsReader gcs_reader;
-  QueryServiceImpl query_service(gcs_reader);
+  QueryServiceImpl query_service(url_reader);
   builder.RegisterService(&query_service);
 
   return builder.BuildAndStart();

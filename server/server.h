@@ -5,8 +5,11 @@
 
 #include <memory>
 
+#include "url_reader.h"
+
 namespace seqr {
 
-absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(int port);
+absl::StatusOr<std::unique_ptr<grpc::Server>> CreateServer(
+    int port, const UrlReader& url_reader);
 
 }  // namespace seqr
