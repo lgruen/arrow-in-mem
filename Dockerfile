@@ -137,7 +137,7 @@ COPY proto /app/proto
 
 RUN mkdir -p /app/build && cd /app/build && \
     cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DCMAKE_CXX_STANDARD=20 && \
     make -j8 && \
     make test CTEST_OUTPUT_ON_FAILURE=1
