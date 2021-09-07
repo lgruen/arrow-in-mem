@@ -22,6 +22,7 @@ TEST(Server, EndToEnd) {
   auto channel = grpc::CreateChannel(absl::StrCat("localhost:", kPort),
                                      grpc::InsecureChannelCredentials());
   auto stub = QueryService::NewStub(channel);
+  ASSERT_TRUE(stub != nullptr);
 
   const char kQueryTextProtoFilename[] =
       "testdata/na12878_trio_query.textproto";
@@ -31,6 +32,12 @@ TEST(Server, EndToEnd) {
   QueryRequest request;
   ASSERT_TRUE(google::protobuf::TextFormat::Parse(&iis, &request));
 
+  grpc::ClientContext context;
+  QueryResponse response;
+  ASSERT_TRUE(stub->Query(&context, request, &response).ok());
+
+  EXPECT_EQ(response.num_rows(), 6);
+
   // Expected results:
   // (1) 1001050069 1-1050069-G-A
   // (2) 1001054900 1-1054900-C-T
@@ -39,7 +46,7 @@ TEST(Server, EndToEnd) {
   // (5) 1011145001 1-11145001-C-T
   // (6) 1011241657 1-11241657-A-G
 
-  // TODO(@lgruen): implement check
+  // TODO(@lgruen): implement result table comparison
 }
 
 }  // namespace seqr
