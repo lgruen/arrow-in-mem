@@ -121,18 +121,23 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
 
 arrow::Status RegisterStringListContainsAny(
     cp::FunctionRegistry* const registry) {
-  // See Arrow's scalar_set_lookup.cc's IsIn for reference.
-  cp::ScalarKernel kernel;
-  kernel.init = InitStringListContainsAny;
-  kernel.exec = ExecStringListContainsAny;
-  kernel.null_handling = cp::NullHandling::OUTPUT_NOT_NULL;
-  kernel.signature =
-      cp::KernelSignature::Make({arrow::list(arrow::utf8())}, arrow::boolean());
   auto string_list_contains_any = std::make_shared<cp::ScalarFunction>(
       "string_list_contains_any", cp::Arity::Unary(), nullptr);
-  if (const auto status = string_list_contains_any->AddKernel(kernel);
-      !status.ok()) {
-    return status;
+  // For list field names, Arrow uses "item", while Parquet uses "element".
+  for (const auto field_name : {"item", "element"}) {
+    // See Arrow's scalar_set_lookup.cc's IsIn for reference.
+    cp::ScalarKernel kernel;
+    kernel.init = InitStringListContainsAny;
+    kernel.exec = ExecStringListContainsAny;
+    kernel.null_handling = cp::NullHandling::OUTPUT_NOT_NULL;
+    kernel.signature =
+        cp::KernelSignature::Make({arrow::list(std::make_shared<arrow::Field>(
+                                      field_name, arrow::utf8()))},
+                                  arrow::boolean());
+    if (const auto status = string_list_contains_any->AddKernel(kernel);
+        !status.ok()) {
+      return status;
+    }
   }
   return registry->AddFunction(std::move(string_list_contains_any));
 }

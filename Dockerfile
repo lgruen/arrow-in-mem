@@ -10,8 +10,9 @@ RUN apt update && \
     ca-certificates \
     ccache \
     cmake \
-    clang \
     curl \
+    g++ \
+    gdb \
     git \
     libc-ares-dev \
     libc-ares2 \
@@ -20,7 +21,6 @@ RUN apt update && \
     libgtest-dev \
     libre2-dev \
     libssl-dev \
-    lldb \
     m4 \
     make \
     pkg-config \
@@ -38,7 +38,8 @@ RUN mkdir -p /deps/abseil-cpp && cd /deps/abseil-cpp && \
     -DCMAKE_CXX_STANDARD=20 \
     -DBUILD_TESTING=OFF \
     -DBUILD_SHARED_LIBS=yes && \
-    make -j8 install
+    make -j8 install && \
+    ldconfig
 
 RUN mkdir -p /deps/protobuf && cd /deps/protobuf && \
     curl -sSL https://github.com/google/protobuf/archive/v3.17.3.tar.gz | tar -xzf - --strip=1 && \
@@ -110,8 +111,9 @@ RUN mkdir -p /deps/arrow && cd /deps/arrow && \
     mkdir build && cd build && \
     cmake ../cpp \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-    # https://issues.apache.org/jira/browse/ARROW-13256.
-    -DCMAKE_CXX_STANDARD=11 \
+    -DCMAKE_CXX_STANDARD=20 \
+    # Don't use -Werror in debug builds.
+    -DBUILD_WARNING_LEVEL=PRODUCTION \
     -DARROW_BUILD_STATIC=ON \
     -DARROW_COMPUTE=ON \
     -DARROW_DATASET=ON \

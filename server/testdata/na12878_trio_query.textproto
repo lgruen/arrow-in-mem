@@ -67,7 +67,7 @@ filter_expression {
             function_name: "and"
             arguments {
               call {
-                function_name: "not"
+                function_name: "invert"
                 arguments {
                   call {
                     function_name: "string_list_contains_any"

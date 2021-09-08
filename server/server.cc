@@ -174,6 +174,9 @@ absl::StatusOr<arrow::compute::Expression> BuildFilterExpression(
       return cp::call(call.function_name(), std::move(arguments), options);
     }
   }
+
+  return absl::InternalError(
+      absl::StrCat("Unhandled case: ", filter_expression.type_case()));
 }
 
 struct ScannerOptions {
