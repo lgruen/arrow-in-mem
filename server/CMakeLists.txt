@@ -45,6 +45,15 @@ target_link_libraries(server PRIVATE
     string_list_contains_any
 )
 
+add_library(gtest_main_with_flags
+    gtest_main_with_flags.cc
+)
+
+target_link_libraries(gtest_main_with_flags PRIVATE
+    gtest
+    absl::flags_parse
+)
+
 add_executable(server_test
     server_test.cc
 )
@@ -52,7 +61,7 @@ add_executable(server_test
 target_link_libraries(server_test PRIVATE
     ${TCMALLOC_LIB}
     gtest
-    gtest_main
+    gtest_main_with_flags
     proto
     server
 )
@@ -75,7 +84,7 @@ add_executable(string_list_contains_any_test
 target_link_libraries(string_list_contains_any_test PRIVATE
     ${TCMALLOC_LIB}
     gtest
-    gtest_main
+    gtest_main_with_flags
     string_list_contains_any
 )
 
