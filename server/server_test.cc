@@ -34,7 +34,8 @@ TEST(Server, EndToEnd) {
 
   grpc::ClientContext context;
   QueryResponse response;
-  ASSERT_TRUE(stub->Query(&context, request, &response).ok());
+  auto status = stub->Query(&context, request, &response);
+  ASSERT_TRUE(status.ok()) << status.error_message();
 
   EXPECT_EQ(response.num_rows(), 6);
 

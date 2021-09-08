@@ -334,10 +334,6 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
 
     blocking_counter.Wait();
 
-    if (num_rows == 0) {  // No results found.
-      return grpc::Status::OK;
-    }
-
     if (num_rows > scanner_options->max_rows) {
       return grpc::Status(
           grpc::StatusCode::CANCELLED,
@@ -352,14 +348,15 @@ class QueryServiceImpl final : public seqr::QueryService::Service {
         return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
                             std::string(result.status().message()));
       }
-      for (const auto& record_batch : *result) {
-        schema = record_batch->schema();
-      }
-      if (schema != nullptr) {
+      if (!result->empty()) {
+        schema = result->front()->schema();
         break;
       }
     }
-    assert(schema != nullptr);
+
+    if (schema == nullptr) {  // No results found.
+      return grpc::Status::OK;
+    }
 
     auto buffer_output_stream = arrow::io::BufferOutputStream::Create();
     if (!buffer_output_stream.ok()) {
