@@ -22,15 +22,18 @@ add_executable(seqr_query_backend
 
 target_link_libraries(seqr_query_backend PRIVATE
     ${TCMALLOC_LIB}
+    absl::flags_parse
     server
 )
 
 add_library(server
     server.cc
+    url_reader.cc
 )
 
 target_link_libraries(server PRIVATE
     absl::base
+    absl::flags
     absl::status
     absl::statusor
     absl::strings
@@ -41,6 +44,29 @@ target_link_libraries(server PRIVATE
     proto
     string_list_contains_any
 )
+
+add_library(gtest_main_with_flags
+    gtest_main_with_flags.cc
+)
+
+target_link_libraries(gtest_main_with_flags PRIVATE
+    gtest
+    absl::flags_parse
+)
+
+add_executable(server_test
+    server_test.cc
+)
+
+target_link_libraries(server_test PRIVATE
+    ${TCMALLOC_LIB}
+    gtest
+    gtest_main_with_flags
+    proto
+    server
+)
+
+add_test(NAME server_test COMMAND server_test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(string_list_contains_any
     string_list_contains_any.cc
@@ -57,9 +83,9 @@ add_executable(string_list_contains_any_test
 
 target_link_libraries(string_list_contains_any_test PRIVATE
     ${TCMALLOC_LIB}
-    string_list_contains_any
     gtest
-    gtest_main
+    gtest_main_with_flags
+    string_list_contains_any
 )
 
-add_test(NAME string_list_contains_any_test COMMAND string_list_contains_any_test)
+add_test(NAME string_list_contains_any_test COMMAND string_list_contains_any_test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

@@ -39,16 +39,17 @@ arrow::Result<std::unique_ptr<cp::KernelState>> InitStringListContainsAny(
       },
       [] {});
 
+  if (result->value_set.empty()) {
+    return arrow::Status::Invalid("SetLookupOptions value_set is empty");
+  }
+
   return result;
 }
 
-arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
-                                        const cp::ExecBatch& batch,
-                                        arrow::Datum* const out) {
-  const auto state =
-      static_cast<const StringListContainsAnyState&>(*ctx->state());
-  const auto& value_set = state.value_set;  // Based on SetLookupOptions.
-
+template <typename Comparator>
+arrow::Status ExecStringListContainsAnyWithComparator(
+    cp::KernelContext* const ctx, const cp::ExecBatch& batch,
+    arrow::Datum* const out, const Comparator& comparator) {
   // The boolean output array has already been preallocated.
   // See IsIn (scalar_set_lookup.cc).
   arrow::ArrayData* const output = out->mutable_array();
@@ -75,7 +76,7 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
           // length. That is, a null value may occupy a non-empty memory space
           // in the data buffer. When this is true, the content of the
           // corresponding memory space is undefined."
-          if (!strings.IsNull(j) && value_set.contains(strings.GetView(j))) {
+          if (!strings.IsNull(j) && comparator(strings.GetView(j))) {
             writer.Set();
             writer.Next();
             return;
@@ -94,22 +95,49 @@ arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
   return arrow::Status::OK();
 }
 
+arrow::Status ExecStringListContainsAny(cp::KernelContext* const ctx,
+                                        const cp::ExecBatch& batch,
+                                        arrow::Datum* const out) {
+  const auto state =
+      static_cast<const StringListContainsAnyState&>(*ctx->state());
+  const auto& value_set = state.value_set;  // Based on SetLookupOptions.
+
+  if (value_set.size() == 1) {  // Fast path for comparing with a single string.
+    return ExecStringListContainsAnyWithComparator(
+        ctx, batch, out,
+        [value = *(value_set.begin())](const arrow::util::string_view sv) {
+          return sv == value;
+        });
+  }
+
+  // Default path, when there's an actual set of strings.
+  return ExecStringListContainsAnyWithComparator(
+      ctx, batch, out, [&value_set](const arrow::util::string_view sv) {
+        return value_set.contains(sv);
+      });
+}
+
 }  // namespace
 
 arrow::Status RegisterStringListContainsAny(
     cp::FunctionRegistry* const registry) {
-  // See Arrow's scalar_set_lookup.cc's IsIn for reference.
-  cp::ScalarKernel kernel;
-  kernel.init = InitStringListContainsAny;
-  kernel.exec = ExecStringListContainsAny;
-  kernel.null_handling = cp::NullHandling::OUTPUT_NOT_NULL;
-  kernel.signature =
-      cp::KernelSignature::Make({arrow::list(arrow::utf8())}, arrow::boolean());
   auto string_list_contains_any = std::make_shared<cp::ScalarFunction>(
       "string_list_contains_any", cp::Arity::Unary(), nullptr);
-  if (const auto status = string_list_contains_any->AddKernel(kernel);
-      !status.ok()) {
-    return status;
+  // For list field names, Arrow uses "item", while Parquet uses "element".
+  for (const auto field_name : {"item", "element"}) {
+    // See Arrow's scalar_set_lookup.cc's IsIn for reference.
+    cp::ScalarKernel kernel;
+    kernel.init = InitStringListContainsAny;
+    kernel.exec = ExecStringListContainsAny;
+    kernel.null_handling = cp::NullHandling::OUTPUT_NOT_NULL;
+    kernel.signature =
+        cp::KernelSignature::Make({arrow::list(std::make_shared<arrow::Field>(
+                                      field_name, arrow::utf8()))},
+                                  arrow::boolean());
+    if (const auto status = string_list_contains_any->AddKernel(kernel);
+        !status.ok()) {
+      return status;
+    }
   }
   return registry->AddFunction(std::move(string_list_contains_any));
 }
