@@ -1,5 +1,4 @@
 click
-google-auth
 grpcio
 protobuf
 pyarrow
