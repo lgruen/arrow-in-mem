@@ -1,11 +1,10 @@
-find_package(Threads)
-
 find_package(absl REQUIRED)
 find_package(protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(GTest REQUIRED)
 find_package(google_cloud_cpp_storage REQUIRED)
 find_package(Arrow REQUIRED)
+find_package(ArrowDataset REQUIRED)
 
 find_library(TCMALLOC_LIB NAMES tcmalloc)
 if(TCMALLOC_LIB)
@@ -13,6 +12,7 @@ if(TCMALLOC_LIB)
 else()
    message(FATAL_ERROR "TCMALLOC_LIB library not found")
 endif()
+
 
 add_compile_options(-Wall -Werror)
 
@@ -37,8 +37,8 @@ target_link_libraries(server PRIVATE
     absl::status
     absl::statusor
     absl::strings
-    arrow
-    arrow_dataset
+    arrow_shared
+    arrow_dataset_shared
     gRPC::grpc++_reflection
     google-cloud-cpp::storage
     proto
@@ -74,7 +74,7 @@ add_library(string_list_contains_any
 
 target_link_libraries(string_list_contains_any PRIVATE
     absl::flat_hash_set
-    arrow
+    arrow_shared
 )
 
 add_executable(string_list_contains_any_test

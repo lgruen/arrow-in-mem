@@ -114,7 +114,7 @@ RUN mkdir -p /deps/arrow && cd /deps/arrow && \
     -DCMAKE_CXX_STANDARD=20 \
     # Don't use -Werror in debug builds.
     -DBUILD_WARNING_LEVEL=PRODUCTION \
-    -DARROW_BUILD_STATIC=ON \
+    -DARROW_BUILD_STATIC=OFF \
     -DARROW_COMPUTE=ON \
     -DARROW_DATASET=ON \
     -DARROW_PARQUET=ON \
@@ -140,7 +140,8 @@ COPY proto /app/proto
 RUN mkdir -p /app/build && cd /app/build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-    -DCMAKE_CXX_STANDARD=20 && \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DCMAKE_MODULE_PATH=/usr/local/lib/cmake/arrow && \
     make -j8 && \
     make test CTEST_OUTPUT_ON_FAILURE=1
 
