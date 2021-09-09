@@ -1,4 +1,4 @@
-# seqr query backend
+# ARCHIVED: moved to [populationgenomics](https://github.com/populationgenomics/seqr-query-backend)
 
 An experimental backend that could be an alternative to the Elasticsearch deployment that seqr currently uses.
 
